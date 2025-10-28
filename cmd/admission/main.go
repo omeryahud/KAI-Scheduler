@@ -43,10 +43,13 @@ func registerPlugins(app *app.App) error {
 	admissionPlugins := plugins.New()
 
 	admissionGpuSharingPlugin := gpusharing.New(app.Client, app.Options.GPUSharingEnabled)
-	admissionRuntimeEnforcementPlugin := runtimeenforcement.New(app.Client)
-
 	admissionPlugins.RegisterPlugin(admissionGpuSharingPlugin)
-	admissionPlugins.RegisterPlugin(admissionRuntimeEnforcementPlugin)
+
+	if app.Options.GPUPodRuntimeClassName != "" {
+		admissionRuntimeEnforcementPlugin := runtimeenforcement.New(app.Client, app.Options.GPUPodRuntimeClassName)
+		admissionPlugins.RegisterPlugin(admissionRuntimeEnforcementPlugin)
+	}
+
 	app.RegisterPlugins(admissionPlugins)
 	return nil
 }

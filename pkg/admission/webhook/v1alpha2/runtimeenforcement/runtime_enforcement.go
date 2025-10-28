@@ -5,24 +5,26 @@ package runtimeenforcement
 
 import (
 	"context"
+	"fmt"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/NVIDIA/KAI-scheduler/pkg/binder/binding/resourcereservation"
-	"github.com/NVIDIA/KAI-scheduler/pkg/binder/common"
-	"github.com/NVIDIA/KAI-scheduler/pkg/common/constants"
 	"github.com/NVIDIA/KAI-scheduler/pkg/common/k8s_utils"
 	"github.com/NVIDIA/KAI-scheduler/pkg/common/resources"
 )
 
 type RuntimeEnforcement struct {
-	kubeClient client.Client
+	kubeClient             client.Client
+	gpuPodRuntimeClassName string
 }
 
-func New(kubeClient client.Client) *RuntimeEnforcement {
+func New(kubeClient client.Client, gpuPodRuntimeClassName string) *RuntimeEnforcement {
 	return &RuntimeEnforcement{
-		kubeClient: kubeClient,
+		kubeClient:             kubeClient,
+		gpuPodRuntimeClassName: gpuPodRuntimeClassName,
 	}
 }
 
@@ -50,15 +52,23 @@ func (p *RuntimeEnforcement) Mutate(pod *v1.Pod) error {
 
 	if resources.RequestsGPU(pod) {
 		exists, err := k8s_utils.RuntimeClassExists(context.Background(),
-			p.kubeClient, constants.DefaultRuntimeClassName)
+			p.kubeClient, p.gpuPodRuntimeClassName)
 		if err != nil {
 			return err
 		} else if !exists {
-			return nil
+			return runtimeClassDoesNotExistError(p.gpuPodRuntimeClassName)
 		}
 
-		common.SetNVIDIARuntimeClass(pod)
+		setRuntimeClass(pod, p.gpuPodRuntimeClassName)
 	}
 
 	return nil
+}
+
+func setRuntimeClass(pod *v1.Pod, runtimeClassName string) {
+	pod.Spec.RuntimeClassName = ptr.To(runtimeClassName)
+}
+
+func runtimeClassDoesNotExistError(runtimeClassName string) error {
+	return fmt.Errorf("cannot set runtimeClassName: runtimeClass '%s' does not exist", runtimeClassName)
 }
