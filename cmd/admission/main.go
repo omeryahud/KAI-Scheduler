@@ -46,7 +46,7 @@ func registerPlugins(app *app.App) error {
 	admissionPlugins.RegisterPlugin(admissionGpuSharingPlugin)
 
 	if app.Options.GPUPodRuntimeClassName != "" {
-		admissionRuntimeEnforcementPlugin := runtimeenforcement.New(app.Client, app.Options.GPUPodRuntimeClassName)
+		admissionRuntimeEnforcementPlugin := runtimeenforcement.New(app.Options.GPUPodRuntimeClassName)
 		admissionPlugins.RegisterPlugin(admissionRuntimeEnforcementPlugin)
 	}
 

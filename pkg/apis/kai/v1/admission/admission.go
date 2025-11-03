@@ -44,7 +44,7 @@ type Admission struct {
 	// +kubebuilder:validation:Optional
 	MutatingWebhookConfigurationName *string `json:"mutatingWebhookConfigurationName,omitempty"`
 
-	// GPUPodRuntimeClassName specifies the runtime class to be set for GPU pods, ignored in Openshift deployments.
+	// GPUPodRuntimeClassName specifies the runtime class to be set for GPU pods
 	// set to empty string to disable
 	// +kubebuilder:validation:Optional
 	GPUPodRuntimeClassName *string `json:"gpuPodRuntimeClassName,omitempty"`
