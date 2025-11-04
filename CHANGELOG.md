@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added parent reference to SubGroup struct in PodGroup CRD to create a hierarchical SubGroup structure
 - Added the option to configure the names of the webhook configuration resources.
 - Option to configure reservation pods runtime class.
-- Added a tool to run time-aware fairness simulations over multiple cycles (see [Time-Aware Fairness Simulator](cmd/time-aware-simulator/README.md)) 
+- Added a tool to run time-aware fairness simulations over multiple cycles (see [Time-Aware Fairness Simulator](cmd/time-aware-simulator/README.md))
+- Added enforcement of the `nvidia` runtime class for GPU pods, with the option to enforce a custom runtime class, or disable enforcement entirely.
 
 ### Fixed
 - Fixed a bug where the scheduler would not re-try updating podgroup status after failure
