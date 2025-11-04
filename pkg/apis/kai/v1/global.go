@@ -21,6 +21,12 @@ type GlobalConfig struct {
 	// +kubebuilder:validation:Optional
 	Affinity *v1.Affinity `json:"affinity,omitempty"`
 
+	// EnforceDefaultPodAntiAffinity defines if the default pod anti affinity term should be required.
+	// If enabled, this prevents pods of each microservice from being scheduled on the same node.
+	// If another podAntiAffinity term is defined (either globally or locally for a specific microservice), this will be ignored.
+	// +kubebuilder:validation:Optional
+	EnforceDefaultPodAntiAffinity *bool `json:"enforceDefaultPodAntiAffinity,omitempty"`
+
 	// SecurityContext defines security context for the KAI containers
 	// +kubebuilder:validation:Optional
 	SecurityContext *v1.SecurityContext `json:"securityContext,omitempty"`
@@ -110,6 +116,8 @@ func (g *GlobalConfig) SetDefaultWhereNeeded() {
 		g.PodLabelSelector = map[string]string{}
 	}
 	g.ExternalTSDBConnection = common.SetDefault(g.ExternalTSDBConnection, nil)
+
+	g.EnforceDefaultPodAntiAffinity = common.SetDefault(g.EnforceDefaultPodAntiAffinity, ptr.To(false))
 }
 
 func (g *GlobalConfig) GetSecurityContext() *v1.SecurityContext {

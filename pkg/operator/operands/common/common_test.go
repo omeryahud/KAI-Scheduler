@@ -331,3 +331,91 @@ var _ = Describe("AllObjectsExists", func() {
 		)
 	})
 })
+
+var _ = Describe("MergeAffinities", func() {
+	It("should return globalAffinity when localAffinity is nil", func() {
+		globalAffinity := &v1.Affinity{
+			NodeAffinity: &v1.NodeAffinity{},
+		}
+		result := MergeAffinities(nil, globalAffinity, nil, false)
+		Expect(result).To(Equal(globalAffinity))
+	})
+
+	It("should return localAffinity when globalAffinity is nil", func() {
+		localAffinity := &v1.Affinity{
+			NodeAffinity: &v1.NodeAffinity{},
+		}
+		result := MergeAffinities(localAffinity, nil, nil, false)
+		Expect(result).To(Equal(localAffinity))
+	})
+
+	It("should prefer local NodeAffinity over global", func() {
+		local := &v1.NodeAffinity{}
+		global := &v1.NodeAffinity{RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{}}
+		localAffinity := &v1.Affinity{NodeAffinity: local}
+		globalAffinity := &v1.Affinity{NodeAffinity: global}
+		result := MergeAffinities(localAffinity, globalAffinity, nil, false)
+		Expect(result.NodeAffinity).To(Equal(local))
+	})
+
+	It("should prefer global NodeAffinity when local is nil", func() {
+		global := &v1.NodeAffinity{}
+		localAffinity := &v1.Affinity{}
+		globalAffinity := &v1.Affinity{NodeAffinity: global}
+		result := MergeAffinities(localAffinity, globalAffinity, nil, false)
+		Expect(result.NodeAffinity).To(Equal(global))
+	})
+
+	It("should prefer local PodAffinity over global", func() {
+		local := &v1.PodAffinity{}
+		global := &v1.PodAffinity{}
+		localAffinity := &v1.Affinity{PodAffinity: local}
+		globalAffinity := &v1.Affinity{PodAffinity: global}
+		result := MergeAffinities(localAffinity, globalAffinity, nil, false)
+		Expect(result.PodAffinity).To(Equal(local))
+	})
+
+	It("should prefer global PodAffinity when local is nil", func() {
+		global := &v1.PodAffinity{}
+		localAffinity := &v1.Affinity{}
+		globalAffinity := &v1.Affinity{PodAffinity: global}
+		result := MergeAffinities(localAffinity, globalAffinity, nil, false)
+		Expect(result.PodAffinity).To(Equal(global))
+	})
+
+	It("should use local PodAntiAffinity if present", func() {
+		local := &v1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{
+				{TopologyKey: "foo"},
+			},
+		}
+		localAffinity := &v1.Affinity{PodAntiAffinity: local}
+		globalAffinity := &v1.Affinity{}
+		result := MergeAffinities(localAffinity, globalAffinity, nil, false)
+		Expect(result.PodAntiAffinity).To(Equal(local))
+	})
+
+	It("should use global PodAntiAffinity if local is nil", func() {
+		global := &v1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{
+				{TopologyKey: "bar"},
+			},
+		}
+		localAffinity := &v1.Affinity{}
+		globalAffinity := &v1.Affinity{PodAntiAffinity: global}
+		result := MergeAffinities(localAffinity, globalAffinity, nil, false)
+		Expect(result.PodAntiAffinity).To(Equal(global))
+	})
+
+	It("should add default preferred podAntiAffinity when both are nil and label exists", func() {
+		labelMap := map[string]string{"app": "my-app"}
+		localAffinity := &v1.Affinity{}
+		globalAffinity := &v1.Affinity{}
+		result := MergeAffinities(localAffinity, globalAffinity, labelMap, true)
+		Expect(result.PodAntiAffinity).ToNot(BeNil())
+		Expect(result.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(HaveLen(1))
+		Expect(result.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0].Weight).To(Equal(int32(100)))
+		Expect(result.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0].PodAffinityTerm.LabelSelector.MatchLabels).To(Equal(labelMap))
+		Expect(result.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0].PodAffinityTerm.TopologyKey).To(Equal("kubernetes.io/hostname"))
+	})
+})

@@ -137,8 +137,12 @@ func DeploymentForKAIConfig(
 	deployment.Spec.Template.Labels["app"] = deploymentName
 
 	deployment.Spec.Template.Spec.ServiceAccountName = deploymentName
-	deployment.Spec.Template.Spec.Affinity = kaiConfig.Spec.Global.Affinity
 	deployment.Spec.Template.Spec.Tolerations = kaiConfig.Spec.Global.Tolerations
+
+	deployment.Spec.Template.Spec.Affinity = MergeAffinities(service.Affinity,
+		kaiConfig.Spec.Global.Affinity,
+		deployment.Spec.Selector.MatchLabels,
+		*kaiConfig.Spec.Global.EnforceDefaultPodAntiAffinity)
 
 	deployment.Spec.Template.Spec.Containers = []v1.Container{
 		{
@@ -237,4 +241,67 @@ func CheckPrometheusCRDsAvailable(ctx context.Context, client client.Reader, tar
 	}
 
 	return true, nil
+}
+
+func MergeAffinities(localAffinity *v1.Affinity,
+	globalAffinity *v1.Affinity,
+	podAntiAffinityLabel map[string]string,
+	requireDefaultPodAntiAffinity bool) *v1.Affinity {
+	if localAffinity == nil {
+		return globalAffinity
+	}
+
+	if globalAffinity == nil {
+		return localAffinity
+	}
+
+	affinity := &v1.Affinity{}
+
+	// If NodeAffinity is defined in localAffinity, use it; otherwise use from globalAffinity
+	if localAffinity.NodeAffinity != nil {
+		affinity.NodeAffinity = localAffinity.NodeAffinity
+	} else if globalAffinity.NodeAffinity != nil {
+		affinity.NodeAffinity = globalAffinity.NodeAffinity
+	}
+
+	// If PodAffinity is defined in localAffinity, use it; otherwise use from globalAffinity
+	if localAffinity.PodAffinity != nil {
+		affinity.PodAffinity = localAffinity.PodAffinity
+	} else if globalAffinity.PodAffinity != nil {
+		affinity.PodAffinity = globalAffinity.PodAffinity
+	}
+
+	podAntiAffinity := &v1.PodAntiAffinity{}
+
+	if localAffinity.PodAntiAffinity != nil {
+		podAntiAffinity = localAffinity.PodAntiAffinity
+	} else if globalAffinity.PodAntiAffinity != nil {
+		podAntiAffinity = globalAffinity.PodAntiAffinity
+	} else if len(podAntiAffinityLabel) > 0 {
+		podAffinityTerm := v1.PodAffinityTerm{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels: podAntiAffinityLabel,
+			},
+			TopologyKey: "kubernetes.io/hostname",
+		}
+
+		podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution = append(
+			podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
+			v1.WeightedPodAffinityTerm{
+				Weight:          100,
+				PodAffinityTerm: podAffinityTerm,
+			},
+		)
+
+		if requireDefaultPodAntiAffinity {
+			podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(
+				podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution,
+				podAffinityTerm,
+			)
+		}
+	}
+
+	affinity.PodAntiAffinity = podAntiAffinity
+
+	return affinity
 }

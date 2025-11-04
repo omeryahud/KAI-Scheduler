@@ -5,6 +5,7 @@
 package common
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 )
 
@@ -24,6 +25,10 @@ type Service struct {
 	// ClientConfig specifies the configuration of k8s client
 	// +kubebuilder:validation:Optional
 	K8sClientConfig *K8sClientConfig `json:"k8sClientConfig,omitempty"`
+
+	// Affinity defines affinity for the service pods
+	// +kubebuilder:validation:Optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
 }
 
 func (s *Service) SetDefaultsWhereNeeded(imageName string) {
