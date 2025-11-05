@@ -27,6 +27,9 @@ spec:
     affinity:
       {{- toYaml .Values.global.affinity | nindent 6 }}
     {{- end }}
+    {{- if .Values.global.enforceDefaultPodAntiAffinity }}
+    enforceDefaultPodAntiAffinity: true
+    {{- end }}
     {{- if .Values.global.tolerations }}
     tolerations:
       {{- toYaml .Values.global.tolerations | nindent 6 }}
@@ -52,6 +55,10 @@ spec:
       resources:
         {{- toYaml .Values.binder.resources | nindent 6 }}
       {{- end }}
+      {{- if .Values.binder.affinity }}
+      affinity:
+        {{- toYaml .Values.binder.affinity | nindent 8 }}
+      {{- end }}
     metricsPort: {{ .Values.binder.ports.metricsPort }}
     resourceReservation:
       {{- if .Values.binder.runtimeClassName }}
@@ -62,16 +69,20 @@ spec:
 
   podGroupController:
     service:
-        enabled: true
-        image:
-          name: {{ .Values.podgroupcontroller.image.name }}
-          repository: {{ .Values.global.registry }}
-          tag: {{ .Chart.Version }}
-          pullPolicy: {{ .Values.podgroupcontroller.image.pullPolicy | default .Values.global.imagePullPolicy }}
-        {{- if .Values.podgroupcontroller.resources }}
-        resources:
-          {{- toYaml .Values.podgroupcontroller.resources | nindent 6 }}
-        {{- end }}
+      enabled: true
+      image:
+        name: {{ .Values.podgroupcontroller.image.name }}
+        repository: {{ .Values.global.registry }}
+        tag: {{ .Chart.Version }}
+        pullPolicy: {{ .Values.podgroupcontroller.image.pullPolicy | default .Values.global.imagePullPolicy }}
+      {{- if .Values.podgroupcontroller.resources }}
+      resources:
+        {{- toYaml .Values.podgroupcontroller.resources | nindent 6 }}
+      {{- end }}
+      {{- if .Values.podgroupcontroller.affinity }}
+      affinity:
+        {{- toYaml .Values.podgroupcontroller.affinity | nindent 8 }}
+      {{- end }}
 
   queueController:
     service:
@@ -85,6 +96,10 @@ spec:
       resources:
         {{- toYaml .Values.queuecontroller.resources | nindent 6 }}
       {{- end }}
+      {{- if .Values.queuecontroller.affinity }}
+      affinity:
+        {{- toYaml .Values.queuecontroller.affinity | nindent 8 }}
+      {{- end }}
 
   admission:
     service:
@@ -97,6 +112,10 @@ spec:
       {{- if .Values.admission.resources }}
       resources:
         {{- toYaml .Values.admission.resources | nindent 6 }}
+      {{- end }}
+      {{- if .Values.admission.affinity }}
+      affinity:
+        {{- toYaml .Values.admission.affinity | nindent 8 }}
       {{- end }}
     gpuSharing: {{ .Values.global.gpuSharing | default false }}
     queueLabelSelector: false
@@ -119,6 +138,10 @@ spec:
       resources:
         {{- toYaml .Values.nodescaleadjuster.resources | nindent 6 }}
       {{- end }}
+      {{- if .Values.nodescaleadjuster.affinity }}
+      affinity:
+        {{- toYaml .Values.nodescaleadjuster.affinity | nindent 8 }}
+      {{- end }}
     args:
       nodeScaleNamespace: {{ .Values.nodescaleadjuster.scalingPodNamespace }} 
       scalingPodImage:
@@ -137,6 +160,10 @@ spec:
       {{- if .Values.scheduler.resources }}
       resources:
         {{- toYaml .Values.scheduler.resources | nindent 6 }}
+      {{- end }}
+      {{- if .Values.scheduler.affinity }}
+      affinity:
+        {{- toYaml .Values.scheduler.affinity | nindent 8 }}
       {{- end }}
     {{- if and .Values.scheduler.ports .Values.scheduler.ports.metricsPort }}
     schedulerService:

@@ -12,6 +12,7 @@ global:
   clusterAutoscaling: false
   nodeSelector: {}
   affinity: {}
+  enforceDefaultPodAntiAffinity: false
   tolerations: []
   namespaceLabelSelector: {}
   podLabelSelector: {}
@@ -35,12 +36,13 @@ podgrouper:
     name: podgrouper
     pullPolicy: IfNotPresent
   queueLabelKey: "kai.scheduler/queue"
+  affinity: {}
 
 podgroupcontroller:
   image:
     name: podgroupcontroller
     pullPolicy: IfNotPresent
-
+  affinity: {}
 binder:
   name: binder
   image:
@@ -50,7 +52,7 @@ binder:
     name: resourcereservation
   ports:
     metricsPort: 8080
-
+  affinity: {}
 scheduler:
   image:
     name: scheduler
@@ -64,6 +66,7 @@ queuecontroller:
     name: queuecontroller
     pullPolicy: IfNotPresent
   certSecretName: queuecontroller-webhook-tls-secret
+  affinity: {}  
 
 admission:
   name: kai-admission
@@ -77,6 +80,7 @@ admission:
     probePort: 8081
   cdi: false
   gpuPodRuntimeClassName: nvidia
+  affinity: {}
 
 nodescaleadjuster:
   image:
@@ -86,6 +90,7 @@ nodescaleadjuster:
     name: scalingpod
     pullPolicy: IfNotPresent
   scalingPodNamespace: kai-scale-adjust
+  affinity: {}
 
 crdupgrader:
   image:
