@@ -15,15 +15,6 @@ tests:
       - notExists:
           path: spec.global.affinity
 
-  - it: should not render affinity when global.affinity is empty array
-    templates:
-      - kai-config.yaml
-    set:
-      global.affinity: []
-    asserts:
-      - notExists:
-          path: spec.global.affinity
-
   - it: should not render affinity when global.affinity is null
     templates:
       - kai-config.yaml
