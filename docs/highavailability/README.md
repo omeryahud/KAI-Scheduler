@@ -23,3 +23,11 @@ After enabling leader election, scale all KAI service replicas in the `kai-sched
 ```
 kubectl scale deployment --all --replicas=2 -n kai-scheduler
 ```
+
+## Pod Anti Affinity
+
+In order to spread replicas of each individual service across cluster nodes, set the following value:
+```
+--set global.requireDefaultPodAntiAffinityTerm=true
+```
+This will add a required podAntiAffinityTerm to all deployments, requiring the scheduler to not place multiple pods of the same service on the same node.
