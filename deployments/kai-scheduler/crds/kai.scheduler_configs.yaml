@@ -3176,12 +3176,6 @@ spec:
                           type: string
                       type: object
                     type: array
-                  enforceDefaultPodAntiAffinity:
-                    description: |-
-                      EnforceDefaultPodAntiAffinity defines if the default pod anti affinity term should be required.
-                      If enabled, this prevents pods of each microservice from being scheduled on the same node.
-                      If another podAntiAffinity term is defined (either globally or locally for a specific microservice), this will be ignored.
-                    type: boolean
                   namespaceLabelSelector:
                     additionalProperties:
                       type: string
@@ -3212,6 +3206,12 @@ spec:
                       services that have no specific replicas configuration
                     format: int32
                     type: integer
+                  requireDefaultPodAntiAffinityTerm:
+                    description: |-
+                      RequireDefaultPodAntiAffinityTerm defines if the default pod anti affinity term should be required.
+                      If enabled, this prevents pods of each microservice from being scheduled on the same node.
+                      If another podAntiAffinity term is defined (either globally or locally for a specific microservice), this will be ignored.
+                    type: boolean
                   schedulerName:
                     description: |-
                       SchedulerName specifies the name of the KAI scheduler. Pods must set this value

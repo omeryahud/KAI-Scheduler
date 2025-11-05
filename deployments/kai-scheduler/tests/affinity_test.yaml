@@ -492,30 +492,30 @@ tests:
   # ======================================
   # Edge Cases and Special Configurations
   # ======================================
-  # Test enforceDefaultPodAntiAffinity feature
-  - it: should not render enforceDefaultPodAntiAffinity when false
+  # Test requireDefaultPodAntiAffinityTerm feature
+  - it: should not render requireDefaultPodAntiAffinityTerm when false
     templates:
       - kai-config.yaml
     set:
-      global.enforceDefaultPodAntiAffinity: false
+      global.requireDefaultPodAntiAffinityTerm: false
     asserts:
       - notExists:
-          path: spec.global.enforceDefaultPodAntiAffinity
+          path: spec.global.requireDefaultPodAntiAffinityTerm
 
-  - it: should render enforceDefaultPodAntiAffinity when true
+  - it: should render requireDefaultPodAntiAffinityTerm when true
     templates:
       - kai-config.yaml
     set:
-      global.enforceDefaultPodAntiAffinity: true
+      global.requireDefaultPodAntiAffinityTerm: true
     asserts:
       - exists:
-          path: spec.global.enforceDefaultPodAntiAffinity
+          path: spec.global.requireDefaultPodAntiAffinityTerm
       - equal:
-          path: spec.global.enforceDefaultPodAntiAffinity
+          path: spec.global.requireDefaultPodAntiAffinityTerm
           value: true
 
-  # Test combination of global affinity and enforceDefaultPodAntiAffinity
-  - it: should render both global affinity and enforceDefaultPodAntiAffinity
+  # Test combination of global affinity and requireDefaultPodAntiAffinityTerm
+  - it: should render both global affinity and requireDefaultPodAntiAffinityTerm
     templates:
       - kai-config.yaml
     set:
@@ -528,14 +528,14 @@ tests:
                 operator: In
                 values:
                 - linux
-      global.enforceDefaultPodAntiAffinity: true
+      global.requireDefaultPodAntiAffinityTerm: true
     asserts:
       - exists:
           path: spec.global.affinity
       - exists:
-          path: spec.global.enforceDefaultPodAntiAffinity
+          path: spec.global.requireDefaultPodAntiAffinityTerm
       - equal:
-          path: spec.global.enforceDefaultPodAntiAffinity
+          path: spec.global.requireDefaultPodAntiAffinityTerm
           value: true
       - equal:
           path: spec.global.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key

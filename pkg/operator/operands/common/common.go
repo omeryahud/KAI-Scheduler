@@ -142,7 +142,7 @@ func DeploymentForKAIConfig(
 	deployment.Spec.Template.Spec.Affinity = MergeAffinities(service.Affinity,
 		kaiConfig.Spec.Global.Affinity,
 		deployment.Spec.Selector.MatchLabels,
-		*kaiConfig.Spec.Global.EnforceDefaultPodAntiAffinity)
+		*kaiConfig.Spec.Global.RequireDefaultPodAntiAffinityTerm)
 
 	deployment.Spec.Template.Spec.Containers = []v1.Container{
 		{
@@ -246,7 +246,7 @@ func CheckPrometheusCRDsAvailable(ctx context.Context, client client.Reader, tar
 func MergeAffinities(localAffinity *v1.Affinity,
 	globalAffinity *v1.Affinity,
 	podAntiAffinityLabel map[string]string,
-	requireDefaultPodAntiAffinity bool) *v1.Affinity {
+	requireDefaultPodAntiAffinityTerm bool) *v1.Affinity {
 	if localAffinity == nil {
 		return globalAffinity
 	}
@@ -293,7 +293,7 @@ func MergeAffinities(localAffinity *v1.Affinity,
 			},
 		)
 
-		if requireDefaultPodAntiAffinity {
+		if requireDefaultPodAntiAffinityTerm {
 			podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(
 				podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution,
 				podAffinityTerm,

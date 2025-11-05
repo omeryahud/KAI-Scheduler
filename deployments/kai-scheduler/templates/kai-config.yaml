@@ -27,8 +27,8 @@ spec:
     affinity:
       {{- toYaml .Values.global.affinity | nindent 6 }}
     {{- end }}
-    {{- if .Values.global.enforceDefaultPodAntiAffinity }}
-    enforceDefaultPodAntiAffinity: true
+    {{- if .Values.global.requireDefaultPodAntiAffinityTerm }}
+    requireDefaultPodAntiAffinityTerm: true
     {{- end }}
     {{- if .Values.global.tolerations }}
     tolerations:
