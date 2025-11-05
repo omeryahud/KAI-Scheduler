@@ -53,7 +53,7 @@ spec:
         pullPolicy: {{ .Values.binder.image.pullPolicy | default .Values.global.imagePullPolicy }}
       {{- if .Values.binder.resources }}
       resources:
-        {{- toYaml .Values.binder.resources | nindent 6 }}
+        {{- toYaml .Values.binder.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.binder.affinity }}
       affinity:
@@ -77,7 +77,7 @@ spec:
         pullPolicy: {{ .Values.podgroupcontroller.image.pullPolicy | default .Values.global.imagePullPolicy }}
       {{- if .Values.podgroupcontroller.resources }}
       resources:
-        {{- toYaml .Values.podgroupcontroller.resources | nindent 6 }}
+        {{- toYaml .Values.podgroupcontroller.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.podgroupcontroller.affinity }}
       affinity:
@@ -94,7 +94,7 @@ spec:
         pullPolicy: {{ .Values.queuecontroller.image.pullPolicy | default .Values.global.imagePullPolicy }}
       {{- if .Values.queuecontroller.resources }}
       resources:
-        {{- toYaml .Values.queuecontroller.resources | nindent 6 }}
+        {{- toYaml .Values.queuecontroller.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.queuecontroller.affinity }}
       affinity:
@@ -111,7 +111,7 @@ spec:
         pullPolicy: {{ .Values.admission.image.pullPolicy | default .Values.global.imagePullPolicy }}
       {{- if .Values.admission.resources }}
       resources:
-        {{- toYaml .Values.admission.resources | nindent 6 }}
+        {{- toYaml .Values.admission.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.admission.affinity }}
       affinity:
@@ -136,7 +136,7 @@ spec:
         pullPolicy: {{ .Values.nodescaleadjuster.image.pullPolicy | default .Values.global.imagePullPolicy }}
       {{- if .Values.nodescaleadjuster.resources }}
       resources:
-        {{- toYaml .Values.nodescaleadjuster.resources | nindent 6 }}
+        {{- toYaml .Values.nodescaleadjuster.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.nodescaleadjuster.affinity }}
       affinity:
@@ -159,7 +159,7 @@ spec:
         pullPolicy: {{ .Values.scheduler.image.pullPolicy | default .Values.global.imagePullPolicy }}
       {{- if .Values.scheduler.resources }}
       resources:
-        {{- toYaml .Values.scheduler.resources | nindent 6 }}
+        {{- toYaml .Values.scheduler.resources | nindent 8 }}
       {{- end }}
       {{- if .Values.scheduler.affinity }}
       affinity:
