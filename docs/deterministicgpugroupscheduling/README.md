@@ -92,12 +92,14 @@ spec:
 ```
 
 ##### Semantics
+- Pods that reference a `GPUGroup` will leverage the gpu-sharing mechanism used for fractional GPUs (`gpu-sharing` ConfigMap, env vars, etc)
 - If Pods reference a non-existent `GPUGroup`, the scheduler should mark the Pods as `Unschedulable`, and attempt scheduling once a matching `GPUGroup` is created
 - If Pods reference an existing `GPUGroup`:
-  - If all other scheduling constraints of the Pod are met, and a `reservation-pod` was not created for this group, the scheduler should create it and wait for it to be Running
-  - If a `reservation-pod` is Running:
-    - The scheduler should attempt scheduling of the incoming Pod to the same node as the `reservation-pod`, and the binder should inject the `GPUGroup`'s GPUs to the incoming Pod's gpu-sharing configmap
-- If no Pods reference a `GPUGroup`, its `reservation-pod` should be deleted
+  - If all other scheduling constraints of the Pod are met:
+    - If a `gpu-reservation` Pod for this `GPUGroup` does not exist, the scheduler should pick a node for the incoming Pod, create a `gpu-reservation` Pod, and wait for it to become Ready
+    - If a `gpu-reservation` Pod already exists and is Ready:
+      - The scheduler should attempt scheduling of the incoming Pod to the same node as the `gpu-reservation` Pod, and the binder should inject the `GPUGroup`'s GPUs to the incoming Pod's `gpu-sharing` ConfigMap
+- If no Pods reference a `GPUGroup`, its `gpu-reservation` Pod should be deleted
 
 #### New `GPUGroupTemplate` CRD is introduced:
 
@@ -172,11 +174,11 @@ spec:
       ...
 ```
 ##### Semantics
-- When a Pod references a `GPUGroupTemplate`:
-  - If no `GPUGroup` was created from this template yet, and all other scheduling constraints are met, create one
-  - If a `GPUGroup` was already created from this template:
-    - Attempt scheduling and attatching of the `GPUGroup`'s GPUs to the Pod:
-      - If failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate`
+- A Pod references a `GPUGroupTemplate`:
+  - If no `GPUGroup` was created from this template yet, create one
+  - For each `GPUGroup` that was created from this template, and until scheduling succeeded:
+    - Attempt scheduling and attatching of the `GPUGroup`'s GPUs to the Pod
+  - If all attempts failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
 
 #### Notes
 - Not sure about `gpuGroup.spec.maxAttachedPods`
@@ -251,7 +253,9 @@ spec:
         enabled: true
     #################################### </unknown>
   # Specifies metadata and spec of the GPUGroupTemplate
-  gpuGroupTemplateTemplate: 
+  gpuGroupTemplate:
+    metadata:
+      name: swap-group-1-gpu-group-template-1
     spec:
       # Specifies metadata and spec of the GPUGroups that will be created from this GPUGroupTemplate
       template:
@@ -271,15 +275,17 @@ status:
   # Kubernetes conditions to communicate state
   conditions:
     ...
-  # Specifies all GPUGroups created of this template
+  # Status of the managed GPUGroupTemplate
   gpuGroupTemplateStatus:
-  - gpu-group-template-1-abcd
-  - gpu-group-template-1-efgh
+    ...
 ```
 This new API leverages the `GPUGroupTemplate` API in order to reserve and share GPU devices.
 In addition to that, it will be responsible for reserving the CPU  memory requested by the user, and managing the GPU memory of the shared GPUs.
 
 ##### Semantics
+- When a `SwapGroup` is created, a matching `GPUGroupTemplate` should be created automatically
+- Pods reference the created `GPUGroupTemplate`
+- Once a `GPUGroup` is created and set up, the scheduler should also, in addition to the required logic for the `GPUGroup`, create a `swap-reservation` Pod on the target Node
 
 ```yaml
 apiVersion: v1
