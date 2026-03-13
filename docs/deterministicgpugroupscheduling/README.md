@@ -20,7 +20,7 @@ metadata:
 spec:
   # Required. Immutable. Number of GPUs to allocate for this GPUGroup
   gpuCount: 2
-  # Optional. Mutable. If not specified, defaults to 0 (unlimited). Specifies the maximum number of Pods that can be attached to this GPUGroup
+  # Optional. Mutable. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
   maxAttachedPods: 3
   # Optional. Immutable. Specifies what type of node the GPUGroup should be scheduled on
   nodeAffinity:
@@ -29,8 +29,11 @@ status:
   # Kubernetes conditions to communicate state
   conditions: 
     ...
-  # Specifies what's the Phase of this GPUGroup, Accepted - No physical GPUs were allocated yet (due to no requesting Pods), Allocated - Physical GPUs allocated
-  phase: Accepted | Allocated
+  # Specifies what's the Phase of this GPUGroup:
+  #   Accepted  - No physical GPUs were allocated yet (no requesting Pods)
+  #   Allocated - Physical GPUs allocated on a node
+  #   Failed    - Previously allocated node became unavailable; nodeName is cleared and GPUGroup awaits re-allocation
+  phase: Accepted | Allocated | Failed
   # Node name that GPUs for this group were allocated from
   nodeName: node-1
   # Specifies GPU uuids of the allocated GPUs within nodeName
@@ -96,10 +99,23 @@ spec:
 - If Pods reference a non-existent `GPUGroup`, the scheduler should mark the Pods as `Unschedulable`, and attempt scheduling once a matching `GPUGroup` is created
 - If Pods reference an existing `GPUGroup`:
   - If all other scheduling constraints of the Pod are met:
-    - If a `gpu-reservation` Pod for this `GPUGroup` does not exist, the scheduler should pick a node for the incoming Pod, create a `gpu-reservation` Pod, and wait for it to become Ready
+    - If a `gpu-reservation` Pod for this `GPUGroup` does not exist, the scheduler should pick a node for the incoming Pod, create a `gpu-reservation` Pod, and leave the incoming Pod Pending until the `gpu-reservation` Pod becomes Ready
     - If a `gpu-reservation` Pod already exists and is Ready:
       - The scheduler should attempt scheduling of the incoming Pod to the same node as the `gpu-reservation` Pod, and the binder should inject the `GPUGroup`'s GPUs to the incoming Pod's `gpu-sharing` ConfigMap
 - If no Pods reference a `GPUGroup`, its `gpu-reservation` Pod should be deleted
+- The `gpu-reservation` Pod's owner references should be updated to include all Pods that have the GPUGroup's GPUs attached to them
+
+##### Quota Accounting
+- The `gpu-reservation` Pod's GPU resources are accounted against the Queue referenced by the GPUGroup's `kai.scheduler/queue` label
+
+##### Node Failure
+- If the node hosting a GPUGroup's GPUs becomes unavailable, the GPUGroup transitions to `Failed` phase and `status.nodeName` is cleared
+- The GPUGroup remains in `Failed` phase until it is re-allocated to a new node on the next scheduling attempt
+
+##### Validation
+- An admission webhook validates that:
+  - Pods reference a `GPUGroup` within their own namespace and queue
+  - `spec.gpuCount` and `spec.nodeAffinity` are immutable after creation
 
 #### New `GPUGroupTemplate` CRD is introduced:
 
@@ -181,7 +197,7 @@ spec:
   - If all attempts failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
 
 #### Notes
-- Not sure about `gpuGroup.spec.maxAttachedPods`
+- `gpuGroup.spec.maxAttachedPods` is a `*int32` pointer: nil means unlimited, a non-nil value specifies the cap
 
 ---
 
@@ -266,7 +282,7 @@ spec:
         spec:
           # Required. Immutable. Number of GPUs to allocate for this GPUGroup attached to this GPUGroup
           gpuCount: 2
-          # Optional. Mutable. If not specified, defaults to 0 (unlimited). Specifies the maximum number of Pods that can be attached to this GPUGroup
+          # Optional. Mutable. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
           maxAttachedPods: 3
           # Optional. Immutable. Specifies what type of node the GPUGroup should be scheduled on
           nodeAffinity:
