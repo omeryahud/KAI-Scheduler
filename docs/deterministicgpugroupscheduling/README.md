@@ -50,7 +50,7 @@ status:
   - unique-member-id-2
 ```
 
-Once a `GPUGroup` is created, Pods can reference it and request to be scheduled on the same node, and have all GPUs allocated to the `GPUGroup` attached:
+Once a `GPUGroup` is created, Pods can reference it and request to be scheduled on the same Node, and have all GPUs allocated to the `GPUGroup` attached:
 
 ```yaml
 apiVersion: v1
@@ -99,9 +99,9 @@ spec:
 - If Pods reference a non-existent `GPUGroup`, the scheduler should mark the Pods as `Unschedulable`, and attempt scheduling once a matching `GPUGroup` is created
 - If Pods reference an existing `GPUGroup`:
   - If all other scheduling constraints of the Pod are met:
-    - If a `gpu-reservation` Pod for this `GPUGroup` does not exist, the scheduler should pick a node for the incoming Pod, create a `gpu-reservation` Pod, and leave the incoming Pod Pending until the `gpu-reservation` Pod becomes Ready
+    - If a `gpu-reservation` Pod for this `GPUGroup` does not exist, the scheduler should pick a Node for the incoming Pod, create a `gpu-reservation` Pod, and leave the incoming Pod Pending until the `gpu-reservation` Pod becomes Ready
     - If a `gpu-reservation` Pod already exists and is Ready:
-      - The scheduler should attempt scheduling of the incoming Pod to the same node as the `gpu-reservation` Pod, and the binder should inject the `GPUGroup`'s GPUs to the incoming Pod's `gpu-sharing` ConfigMap
+      - The scheduler should attempt scheduling of the incoming Pod to the same Node as the `gpu-reservation` Pod, and the binder should inject the `GPUGroup`'s GPUs' UUIDs to the incoming Pod's `gpu-sharing` ConfigMap
 - If no Pods reference a `GPUGroup`, its `gpu-reservation` Pod should be deleted
 - The `gpu-reservation` Pod's owner references should be updated to include all Pods that have the GPUGroup's GPUs attached to them
 
@@ -138,8 +138,11 @@ spec:
   template:
     ...
 status:
-  # Specifies all GPUGroups created of this template
-  templatedGPUGroups:
+  # Kubernetes conditions to communicate state
+  conditions: 
+    ...
+  # Specifies all GPUGroups created from this template
+  templatedGPUGroupsNames:
   - gpu-group-template-1-abcd
   - gpu-group-template-1-efgh
 ```
@@ -193,7 +196,7 @@ spec:
 - A Pod references a `GPUGroupTemplate`:
   - If no `GPUGroup` was created from this template yet, create one
   - For each `GPUGroup` that was created from this template, and until scheduling succeeded:
-    - Attempt scheduling and attatching of the `GPUGroup`'s GPUs to the Pod
+    - Attempt scheduling and attaching of the `GPUGroup`'s GPUs to the Pod
   - If all attempts failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
 
 #### Notes
@@ -203,12 +206,12 @@ spec:
 
 # Swap Aware Scheduling Using `GPUGroupTemplates`
 ## Motivation
-Allow engineers to deploy multiple workloads on shared GPU resources in a deterministic way by leveraging [Run:AI Swap](https://run-ai-docs.nvidia.com/self-hosted/platform-management/runai-scheduler/resource-optimization/memory-swap).
+Allow users to deploy multiple workloads on shared GPU resources in a deterministic way by leveraging [Run:AI Swap](https://run-ai-docs.nvidia.com/self-hosted/platform-management/runai-scheduler/resource-optimization/memory-swap).
 
 ## Proposal
 ### API
 #### New `SwapGroup` CRD is introduced:
-A `SwapGroup` is a new resource that users can define and reference in their Pods. It gives them the ability to dynamically enable and configure the Run:AI Swap feature on their nodes.
+A `SwapGroup` is a new resource that users can define and reference in their Pods. It gives them the ability to dynamically enable and configure the Run:AI Swap feature on their Nodes.
 ```yaml
 apiVersion: runai.scheduler/v1alpha1
 # Manages groups of GPUs that are shared utilizing Run:AI's Swap feature
