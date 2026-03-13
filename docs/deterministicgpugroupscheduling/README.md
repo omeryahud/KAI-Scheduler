@@ -122,8 +122,11 @@ spec:
   template:
     ...
 status:
+  # Kubernetes conditions to communicate state
+  conditions: 
+    ...
   # Specifies all GPUGroups created from this template
-  templatedGPUGroups:
+  templatedGPUGroupsNames:
   - gpu-group-template-1-abcd
   - gpu-group-template-1-efgh
 ```
