@@ -279,6 +279,8 @@ status:
 This new API leverages the `GPUGroupTemplate` API in order to reserve and share GPU devices.
 In addition to that, it will be responsible for reserving the CPU  memory requested by the user, and managing the GPU memory of the shared GPUs.
 
+##### Semantics
+
 ```yaml
 apiVersion: v1
 kind: Pod
