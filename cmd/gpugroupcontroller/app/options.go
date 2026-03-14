@@ -13,9 +13,8 @@ type Options struct {
 	Qps                     int
 	Burst                   int
 	MaxConcurrentReconciles int
-	LogLevel                int
-	SchedulerName           string
-	EnableGPUGroupWebhook   bool
+	LogLevel              int
+	EnableGPUGroupWebhook bool
 }
 
 func InitOptions(fs *flag.FlagSet) *Options {
@@ -37,8 +36,6 @@ func InitOptions(fs *flag.FlagSet) *Options {
 		"Max concurrent reconciles")
 	fs.IntVar(&options.LogLevel, "log-level", 3,
 		"Log level")
-	fs.StringVar(&options.SchedulerName, "scheduler-name", "kai-scheduler",
-		"The name of the scheduler")
 	fs.BoolVar(&options.EnableGPUGroupWebhook, "enable-gpugroup-webhook", true,
 		"Enable GPUGroup validation webhook")
 

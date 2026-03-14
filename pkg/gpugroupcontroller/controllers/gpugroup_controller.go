@@ -26,7 +26,7 @@ import (
 const (
 	gpuGroupLabel = "kai.scheduler/gpu-group"
 
-	gpuReservationPodPrefix = "gpu-reservation"
+	gpuGroupReservationPodPrefix = "gpu-group-reservation"
 
 	rateLimiterBaseDelay = time.Second
 	rateLimiterMaxDelay  = time.Minute
@@ -161,7 +161,7 @@ func (r *GPUGroupReconciler) listConsumerPods(ctx context.Context, gpuGroup *kai
 
 	var consumerPods []v1.Pod
 	for _, pod := range podList.Items {
-		if !isReservationPod(&pod) {
+		if !isReservationPod(&pod) && isPodScheduled(&pod) {
 			consumerPods = append(consumerPods, pod)
 		}
 	}
@@ -169,7 +169,7 @@ func (r *GPUGroupReconciler) listConsumerPods(ctx context.Context, gpuGroup *kai
 }
 
 func (r *GPUGroupReconciler) getReservationPod(ctx context.Context, gpuGroup *kaiv1alpha1.GPUGroup) (*v1.Pod, error) {
-	reservationPodName := fmt.Sprintf("%s-%s", gpuReservationPodPrefix, gpuGroup.Name)
+	reservationPodName := fmt.Sprintf("%s-%s", gpuGroupReservationPodPrefix, gpuGroup.Name)
 	pod := &v1.Pod{}
 	err := r.Client.Get(ctx, types.NamespacedName{
 		Namespace: gpuGroup.Namespace,
@@ -218,16 +218,30 @@ func mapPodEventToGPUGroup(_ context.Context, p client.Object) []reconcile.Reque
 }
 
 func isReservationPod(pod *v1.Pod) bool {
-	return len(pod.Name) > len(gpuReservationPodPrefix) &&
-		pod.Name[:len(gpuReservationPodPrefix)] == gpuReservationPodPrefix
+	return len(pod.Name) > len(gpuGroupReservationPodPrefix) &&
+		pod.Name[:len(gpuGroupReservationPodPrefix)] == gpuGroupReservationPodPrefix
+}
+
+func isPodScheduled(pod *v1.Pod) bool {
+	if pod.Spec.NodeName != "" {
+		return true
+	}
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == v1.PodScheduled && condition.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 func isPodHealthy(pod *v1.Pod) bool {
-	if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodSucceeded {
-		return true
+	if pod.Status.Phase != v1.PodRunning {
+		return false
 	}
-	if pod.Status.Phase == v1.PodPending {
-		return true
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == v1.PodReady && condition.Status == v1.ConditionTrue {
+			return true
+		}
 	}
 	return false
 }
