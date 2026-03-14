@@ -150,6 +150,10 @@ spec:
               phase:
                 description: Phase of this GPUGroup
                 type: string
+              phaseMessage:
+                description: Human-readable message explaining what caused the current
+                  phase
+                type: string
               uniqueMemberIDs:
                 description: Unique member IDs of Pods that have this GPUGroup's GPUs
                   attached

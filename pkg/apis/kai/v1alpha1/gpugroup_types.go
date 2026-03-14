@@ -37,6 +37,10 @@ type GPUGroupStatus struct {
 	// +optional
 	Phase GPUGroupPhase `json:"phase,omitempty"`
 
+	// Human-readable message explaining what caused the current phase
+	// +optional
+	PhaseMessage string `json:"phaseMessage,omitempty"`
+
 	// Node name that GPUs for this group were allocated from
 	// +optional
 	NodeName string `json:"nodeName,omitempty"`

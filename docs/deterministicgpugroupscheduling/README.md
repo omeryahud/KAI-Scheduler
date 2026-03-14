@@ -36,6 +36,8 @@ status:
   #   Allocated - Physical GPUs allocated on a node
   #   Failed    - Previously allocated node became unavailable; nodeName is cleared and GPUGroup awaits re-allocation
   phase: Accepted | Allocated | Failed
+  # Human-readable message explaining what caused the current phase
+  phaseMessage: "gpu-reservation pod gpu-reservation-gpu-group-1 is unhealthy (phase: Failed)"
   # Node name that GPUs for this group were allocated from
   nodeName: node-1
   # Specifies GPU UUIDs of the allocated GPUs within nodeName

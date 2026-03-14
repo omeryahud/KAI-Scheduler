@@ -8,7 +8,7 @@ Create `pkg/apis/kai/v1alpha1/gpugroup_types.go`:
 
 - `GPUGroup` and `GPUGroupList` structs with kubebuilder markers (`+genclient`, `+kubebuilder:object:root=true`, `+kubebuilder:subresource:status`)
 - `GPUGroupSpec`: `GPUCount int32`, `MaxAttachedPods *int32`
-- `GPUGroupStatus`: `Phase GPUGroupPhase`, `NodeName string`, `GPUSUUIDs []string`, `AttachedPodsNames []string`, `UniqueMemberIDs []string`, `Conditions []metav1.Condition`
+- `GPUGroupStatus`: `Phase GPUGroupPhase`, `PhaseMessage string`, `NodeName string`, `GPUSUUIDs []string`, `AttachedPodsNames []string`, `UniqueMemberIDs []string`, `Conditions []metav1.Condition`
 - `GPUGroupPhase` type with constants: `Accepted`, `Allocated`, `Failed`
 - Place in `kai/v1alpha1` alongside `Topology` (same group `kai.scheduler`, same version)
 
@@ -79,7 +79,7 @@ Create `pkg/admission/webhook/v1alpha1/gpugroup/gpu_group.go`:
 
 ## Phase 3: GPUGroup Controller
 
-A new controller manages GPUGroup lifecycle: reservation pod creation, status updates, node failure detection.
+A new controller watches GPUGroup resources and updates their status based on the state of the reservation pod and consumer pods. Reservation pod creation, deletion, and ownership management are the scheduler's responsibility.
 
 ### 3.1 Controller structure
 
@@ -93,10 +93,11 @@ Create `pkg/gpugroupcontroller/` with:
 
 On each reconcile:
 
-1. List pods referencing this GPUGroup (via indexer)
-2. If no consumer pods exist and `gpu-reservation` pod exists → delete reservation pod, set phase `Accepted`
-3. If consumer pods exist and phase is `Allocated` → update `status.attachedPodsNames` and `status.uniqueMemberIDs`, update reservation pod's owner references
-4. If phase is `Allocated` and gpu-reservation pod is unhealthy → set phase `Failed`; remains in `Failed` until the gpu-reservation pod becomes healthy again
+1. List consumer pods referencing this GPUGroup (via indexer)
+2. Look up the `gpu-reservation` pod for this GPUGroup
+3. If phase is `Allocated` and gpu-reservation pod is unhealthy → set phase `Failed` with `phaseMessage` explaining the cause
+4. If phase is `Failed` and gpu-reservation pod is healthy → set phase back to `Allocated` with `phaseMessage` noting recovery
+5. Update `status.attachedPodsNames` and `status.uniqueMemberIDs` from consumer pods
 
 ### 3.3 App entry point
 
