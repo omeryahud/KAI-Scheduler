@@ -22,7 +22,7 @@ type GPUGroupSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="gpuCount is immutable"
-	GpuCount int32 `json:"gpuCount"`
+	GPUCount int32 `json:"gpuCount"`
 
 	// Maximum number of Pods that can be attached to this GPUGroup.
 	// Nil means unlimited. Can only be increased after creation.
@@ -41,13 +41,13 @@ type GPUGroupStatus struct {
 	// +optional
 	NodeName string `json:"nodeName,omitempty"`
 
-	// GPU UUIDs of the allocated GPUs within the node
+	// UUIDs of the allocated GPUs within the node
 	// +optional
-	GPUs []string `json:"gpus,omitempty"`
+	GPUSUUIDs []string `json:"gpusUUIDs,omitempty"`
 
 	// Names of Pods that have this GPUGroup's GPUs attached
 	// +optional
-	Pods []string `json:"pods,omitempty"`
+	AttachedPodsNames []string `json:"attachedPodsNames,omitempty"`
 
 	// Unique member IDs of Pods that have this GPUGroup's GPUs attached
 	// +optional

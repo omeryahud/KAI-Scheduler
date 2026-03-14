@@ -76,6 +76,11 @@ spec:
           status:
             description: GPUGroupStatus defines the observed state of GPUGroup
             properties:
+              attachedPodsNames:
+                description: Names of Pods that have this GPUGroup's GPUs attached
+                items:
+                  type: string
+                type: array
               conditions:
                 description: Conditions represent the latest available observations
                   of the GPUGroup's state
@@ -134,8 +139,8 @@ spec:
                   - type
                   type: object
                 type: array
-              gpus:
-                description: GPU UUIDs of the allocated GPUs within the node
+              gpusUUIDs:
+                description: UUIDs of the allocated GPUs within the node
                 items:
                   type: string
                 type: array
@@ -145,11 +150,6 @@ spec:
               phase:
                 description: Phase of this GPUGroup
                 type: string
-              pods:
-                description: Names of Pods that have this GPUGroup's GPUs attached
-                items:
-                  type: string
-                type: array
               uniqueMemberIDs:
                 description: Unique member IDs of Pods that have this GPUGroup's GPUs
                   attached

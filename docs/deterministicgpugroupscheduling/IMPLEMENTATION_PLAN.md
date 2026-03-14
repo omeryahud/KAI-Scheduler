@@ -7,8 +7,8 @@
 Create `pkg/apis/kai/v1alpha1/gpugroup_types.go`:
 
 - `GPUGroup` and `GPUGroupList` structs with kubebuilder markers (`+genclient`, `+kubebuilder:object:root=true`, `+kubebuilder:subresource:status`)
-- `GPUGroupSpec`: `GpuCount int32`, `MaxAttachedPods *int32`
-- `GPUGroupStatus`: `Phase GPUGroupPhase`, `NodeName string`, `GPUs []string`, `Pods []string`, `UniqueMemberIDs []string`, `Conditions []metav1.Condition`
+- `GPUGroupSpec`: `GPUCount int32`, `MaxAttachedPods *int32`
+- `GPUGroupStatus`: `Phase GPUGroupPhase`, `NodeName string`, `GPUSUUIDs []string`, `AttachedPodsNames []string`, `UniqueMemberIDs []string`, `Conditions []metav1.Condition`
 - `GPUGroupPhase` type with constants: `Accepted`, `Allocated`, `Failed`
 - Place in `kai/v1alpha1` alongside `Topology` (same group `kai.scheduler`, same version)
 
@@ -95,7 +95,7 @@ On each reconcile:
 
 1. List pods referencing this GPUGroup (via indexer)
 2. If no consumer pods exist and `gpu-reservation` pod exists → delete reservation pod, set phase `Accepted`
-3. If consumer pods exist and phase is `Allocated` → update `status.pods` and `status.uniqueMemberIDs`, update reservation pod's owner references
+3. If consumer pods exist and phase is `Allocated` → update `status.attachedPodsNames` and `status.uniqueMemberIDs`, update reservation pod's owner references
 4. If phase is `Allocated` and gpu-reservation pod is unhealthy → set phase `Failed`; remains in `Failed` until the gpu-reservation pod becomes healthy again
 
 ### 3.3 App entry point
@@ -226,7 +226,7 @@ This can be a separate `gpugrouptemplate` plugin or part of the `gpugroup` plugi
 
 Modify `pkg/binder/binding/binder.go`:
 
-- When binding a pod that references a GPUGroup, read the GPUGroup's `status.gpus` UUIDs
+- When binding a pod that references a GPUGroup, read the GPUGroup's `status.gpusUUIDs` UUIDs
 - Inject them into the `gpu-sharing` ConfigMap (same mechanism as fractional GPUs)
 - Use the existing `gpusharing` binder plugin path
 

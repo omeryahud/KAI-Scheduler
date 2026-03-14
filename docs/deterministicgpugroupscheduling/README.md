@@ -38,12 +38,12 @@ status:
   phase: Accepted | Allocated | Failed
   # Node name that GPUs for this group were allocated from
   nodeName: node-1
-  # Specifies GPU uuids of the allocated GPUs within nodeName
-  gpus:
+  # Specifies GPU UUIDs of the allocated GPUs within nodeName
+  gpusUUIDs:
   - uuid-123412341234
   - uuid-qwerqwerqwer
-  # Specifies to which Pods the GPUs of this GPUGroup are currently attached
-  pods:
+  # Specifies names of Pods that have this GPUGroup's GPUs attached
+  attachedPodsNames:
   - consumer-1
   - consumer-2
   # Specifies unique member IDs specified by Pods that have the GPUs of this GPUGroup attached. An incoming Pod cannot have the GPUGroups' GPUs attached to it, if it specifies a unique-member-id that was already specified by a proior Pod
