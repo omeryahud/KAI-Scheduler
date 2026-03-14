@@ -11,6 +11,7 @@ import (
 	"github.com/kai-scheduler/KAI-scheduler/cmd/admission/app"
 
 	"github.com/kai-scheduler/KAI-scheduler/pkg/admission/plugins"
+	"github.com/kai-scheduler/KAI-scheduler/pkg/admission/webhook/v1alpha2/gpugroup"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/admission/webhook/v1alpha2/gpusharing"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/admission/webhook/v1alpha2/runtimeenforcement"
 )
@@ -44,6 +45,9 @@ func registerPlugins(app *app.App) error {
 
 	admissionGpuSharingPlugin := gpusharing.New(app.Client, app.Options.GPUSharingEnabled)
 	admissionPlugins.RegisterPlugin(admissionGpuSharingPlugin)
+
+	admissionGPUGroupPlugin := gpugroup.New()
+	admissionPlugins.RegisterPlugin(admissionGPUGroupPlugin)
 
 	if app.Options.GPUPodRuntimeClassName != "" {
 		admissionRuntimeEnforcementPlugin := runtimeenforcement.New(app.Options.GPUPodRuntimeClassName)
