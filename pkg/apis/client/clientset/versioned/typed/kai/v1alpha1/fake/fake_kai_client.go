@@ -32,6 +32,14 @@ type FakeKaiV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeKaiV1alpha1) GPUGroups(namespace string) v1alpha1.GPUGroupInterface {
+	return newFakeGPUGroups(c, namespace)
+}
+
+func (c *FakeKaiV1alpha1) GPUGroupTemplates(namespace string) v1alpha1.GPUGroupTemplateInterface {
+	return newFakeGPUGroupTemplates(c, namespace)
+}
+
 func (c *FakeKaiV1alpha1) Topologies() v1alpha1.TopologyInterface {
 	return newFakeTopologies(c)
 }

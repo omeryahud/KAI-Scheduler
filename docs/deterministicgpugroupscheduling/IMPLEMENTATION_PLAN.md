@@ -4,21 +4,21 @@
 
 ### 1.1 Define GPUGroup types
 
-Create `pkg/apis/scheduling/v1alpha2/gpugroup_types.go`:
+Create `pkg/apis/kai/v1alpha1/gpugroup_types.go`:
 
 - `GPUGroup` and `GPUGroupList` structs with kubebuilder markers (`+genclient`, `+kubebuilder:object:root=true`, `+kubebuilder:subresource:status`)
 - `GPUGroupSpec`: `GpuCount int32`, `MaxAttachedPods *int32`
 - `GPUGroupStatus`: `Phase GPUGroupPhase`, `NodeName string`, `GPUs []string`, `Pods []string`, `UniqueMemberIDs []string`, `Conditions []metav1.Condition`
 - `GPUGroupPhase` type with constants: `Accepted`, `Allocated`, `Failed`
-- Place in `scheduling/v1alpha2` alongside `BindRequest` (same group `scheduling.run.ai`, same version) — avoids creating a new API group
+- Place in `kai/v1alpha1` alongside `Topology` (same group `kai.scheduler`, same version)
 
 ### 1.2 Define GPUGroupTemplate types
 
-Create `pkg/apis/scheduling/v1alpha2/gpugrouptemplate_types.go`:
+Create `pkg/apis/kai/v1alpha1/gpugrouptemplate_types.go`:
 
 - `GPUGroupTemplate` and `GPUGroupTemplateList` structs
 - `GPUGroupTemplateSpec`: `Template GPUGroupTemplateData` (embeds GPUGroup metadata+spec)
-- `GPUGroupTemplateStatus`: `TemplatedGPUGroups []string`, `Conditions []metav1.Condition`
+- `GPUGroupTemplateStatus`: `TemplatedGPUGroupsNames []string`, `Conditions []metav1.Condition`
 
 ### 1.3 Run code generation
 
@@ -28,12 +28,12 @@ Create `pkg/apis/scheduling/v1alpha2/gpugrouptemplate_types.go`:
 
 **Files created:**
 
-- `pkg/apis/scheduling/v1alpha2/gpugroup_types.go`
-- `pkg/apis/scheduling/v1alpha2/gpugrouptemplate_types.go`
+- `pkg/apis/kai/v1alpha1/gpugroup_types.go`
+- `pkg/apis/kai/v1alpha1/gpugrouptemplate_types.go`
 
 **Files modified:**
 
-- `pkg/apis/scheduling/v1alpha2/zz_generated.deepcopy.go` (auto-generated)
+- `pkg/apis/kai/v1alpha1/zz_generated.deepcopy.go` (auto-generated)
 - `deployments/kai-scheduler/crds/` (new CRD YAMLs auto-generated)
 - `pkg/apis/client/` (auto-generated clientset, informers, listers)
 
@@ -43,7 +43,7 @@ Create `pkg/apis/scheduling/v1alpha2/gpugrouptemplate_types.go`:
 
 ### 2.1 GPUGroup validation webhook
 
-Create `pkg/apis/scheduling/v1alpha2/gpugroup_webhook.go`:
+Create `pkg/apis/kai/v1alpha1/gpugroup_webhook.go`:
 
 - `SetupGPUGroupWebhookWithManager(mgr)` — follows the Queue/PodGroup webhook pattern
 - `ValidateCreate`: `gpuCount >= 1`, `maxAttachedPods` if set must be `>= 1`
@@ -52,13 +52,13 @@ Create `pkg/apis/scheduling/v1alpha2/gpugroup_webhook.go`:
 
 ### 2.2 GPUGroupTemplate validation webhook
 
-Create `pkg/apis/scheduling/v1alpha2/gpugrouptemplate_webhook.go`:
+Create `pkg/apis/kai/v1alpha1/gpugrouptemplate_webhook.go`:
 
 - Validate the embedded template spec (same rules as GPUGroup create validation)
 
 ### 2.3 Pod admission plugin for GPUGroup references
 
-Create `pkg/admission/webhook/v1alpha2/gpugroup/gpu_group.go`:
+Create `pkg/admission/webhook/v1alpha1/gpugroup/gpu_group.go`:
 
 - Implements the existing `Plugin` interface (`Name()`, `Validate()`, `Mutate()`)
 - `Validate`: if pod has `kai.scheduler/gpu-group` label, verify the referenced GPUGroup exists in the same namespace and queue
@@ -67,9 +67,9 @@ Create `pkg/admission/webhook/v1alpha2/gpugroup/gpu_group.go`:
 
 **Files created:**
 
-- `pkg/apis/scheduling/v1alpha2/gpugroup_webhook.go`
-- `pkg/apis/scheduling/v1alpha2/gpugrouptemplate_webhook.go`
-- `pkg/admission/webhook/v1alpha2/gpugroup/gpu_group.go`
+- `pkg/apis/kai/v1alpha1/gpugroup_webhook.go`
+- `pkg/apis/kai/v1alpha1/gpugrouptemplate_webhook.go`
+- `pkg/admission/webhook/v1alpha1/gpugroup/gpu_group.go`
 
 **Files modified:**
 
@@ -137,7 +137,7 @@ Create `pkg/gpugrouptemplatecontroller/`:
 On reconcile:
 
 1. List GPUGroups owned by this template
-2. Update `status.templatedGPUGroups` with owned GPUGroup names
+2. Update `status.templatedGPUGroupsNames` with owned GPUGroup names
 3. No automatic GPUGroup creation here — GPUGroups are created on-demand by the scheduler when a pod references the template and no existing GPUGroup can accept it
 
 ### 4.3 App entry point & operator integration

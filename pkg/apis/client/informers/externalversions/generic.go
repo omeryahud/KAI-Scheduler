@@ -60,6 +60,10 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kai, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("gpugroups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kai().V1alpha1().GPUGroups().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("gpugrouptemplates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kai().V1alpha1().GPUGroupTemplates().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("topologies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kai().V1alpha1().Topologies().Informer()}, nil
 

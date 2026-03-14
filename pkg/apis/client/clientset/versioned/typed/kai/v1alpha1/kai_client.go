@@ -32,12 +32,22 @@ import (
 
 type KaiV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	GPUGroupsGetter
+	GPUGroupTemplatesGetter
 	TopologiesGetter
 }
 
 // KaiV1alpha1Client is used to interact with features provided by the kai group.
 type KaiV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *KaiV1alpha1Client) GPUGroups(namespace string) GPUGroupInterface {
+	return newGPUGroups(c, namespace)
+}
+
+func (c *KaiV1alpha1Client) GPUGroupTemplates(namespace string) GPUGroupTemplateInterface {
+	return newGPUGroupTemplates(c, namespace)
 }
 
 func (c *KaiV1alpha1Client) Topologies() TopologyInterface {

@@ -22,6 +22,22 @@ SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
+// GPUGroupListerExpansion allows custom methods to be added to
+// GPUGroupLister.
+type GPUGroupListerExpansion interface{}
+
+// GPUGroupNamespaceListerExpansion allows custom methods to be added to
+// GPUGroupNamespaceLister.
+type GPUGroupNamespaceListerExpansion interface{}
+
+// GPUGroupTemplateListerExpansion allows custom methods to be added to
+// GPUGroupTemplateLister.
+type GPUGroupTemplateListerExpansion interface{}
+
+// GPUGroupTemplateNamespaceListerExpansion allows custom methods to be added to
+// GPUGroupTemplateNamespaceLister.
+type GPUGroupTemplateNamespaceListerExpansion interface{}
+
 // TopologyListerExpansion allows custom methods to be added to
 // TopologyLister.
 type TopologyListerExpansion interface{}

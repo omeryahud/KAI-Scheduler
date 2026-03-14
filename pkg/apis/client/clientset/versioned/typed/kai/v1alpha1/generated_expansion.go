@@ -22,4 +22,8 @@ SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
+type GPUGroupExpansion interface{}
+
+type GPUGroupTemplateExpansion interface{}
+
 type TopologyExpansion interface{}
