@@ -1,10 +1,15 @@
 # Deterministic Scheduling on Shared GPUs
+
 ## Motivation
+
 Allowing workloads of different kinds to share a group of GPUs (driver-managed time-sharing or Run:AI Swap) in a deterministic way.
 
 ## Proposal
+
 ### Scheduling API
+
 #### New `GPUGroup` CRD is introduced:
+
 A `GPUGroup` is a new resource that users can define and reference in their Pods. It gives them the ability to request scheduling of multiple Pods to share the same GPU devices (1 or more whole GPU devices).
 
 ```yaml
@@ -22,9 +27,6 @@ spec:
   gpuCount: 2
   # Optional. Mutable. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
   maxAttachedPods: 3
-  # Optional. Immutable. Specifies what type of node the GPUGroup should be scheduled on
-  nodeAffinity:
-    ...
 status:
   # Kubernetes conditions to communicate state
   conditions: 
@@ -95,6 +97,7 @@ spec:
 ```
 
 ##### Semantics
+
 - Pods that reference a `GPUGroup` will leverage the gpu-sharing mechanism used for fractional GPUs (`gpu-sharing` ConfigMap, env vars, etc)
 - If Pods reference a non-existent `GPUGroup`, the scheduler should mark the Pods as `Unschedulable`, and attempt scheduling once a matching `GPUGroup` is created
 - If Pods reference an existing `GPUGroup`:
@@ -106,16 +109,25 @@ spec:
 - The `gpu-reservation` Pod's owner references should be updated to include all Pods that have the GPUGroup's GPUs attached to them
 
 ##### Quota Accounting
+
 - The `gpu-reservation` Pod's GPU resources are accounted against the Queue referenced by the GPUGroup's `kai.scheduler/queue` label
 
-##### Node Failure
-- If the node hosting a GPUGroup's GPUs becomes unavailable, the GPUGroup transitions to `Failed` phase and `status.nodeName` is cleared
-- The GPUGroup remains in `Failed` phase until it is re-allocated to a new node on the next scheduling attempt
+##### GPU Reservation Pod Failure
+
+- If the `gpu-reservation` Pod reserving a GPUGroup's GPUs becomes unhealthy, the GPUGroup transitions to `Failed` phase.
+- The GPUGroup remains in `Failed` phase until its `gpu-reservation` Pod becomes healthy again
+
+##### Consumer Pod Scheduling Constraints
+
+- The first consumer Pod's scheduling constraints (nodeSelector, affinity, tolerations) determine which Node the GPUGroup's `gpu-reservation` Pod is placed on
+- Subsequent consumer Pods are constrained to the same Node. If a consumer Pod has scheduling constraints incompatible with the GPUGroup's Node (e.g., a nodeSelector that doesn't match), it will be marked as `Unschedulable`
+- Users should ensure all Pods referencing the same GPUGroup have compatible scheduling constraints
 
 ##### Validation
+
 - An admission webhook validates that:
   - Pods reference a `GPUGroup` within their own namespace and queue
-  - `spec.gpuCount` and `spec.nodeAffinity` are immutable after creation
+  - `spec.gpuCount` is immutable after creation
 
 #### New `GPUGroupTemplate` CRD is introduced:
 
@@ -148,6 +160,7 @@ status:
 ```
 
 The below manifest requires that Pods managed by the same Deployment will not have GPUs of the same `GPUGroup` attached to them:
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -170,7 +183,9 @@ spec:
       schedulerName: kai-scheduler
       ...
 ```
+
 However, the below manifest will allow Pods managed by the same Deployment to share the GPUs of the same `GPUGroup`:
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -192,7 +207,9 @@ spec:
       schedulerName: kai-scheduler
       ...
 ```
+
 ##### Semantics
+
 - A Pod references a `GPUGroupTemplate`:
   - If no `GPUGroup` was created from this template yet, create one
   - For each `GPUGroup` that was created from this template, and until scheduling succeeded:
@@ -200,18 +217,25 @@ spec:
   - If all attempts failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
 
 #### Notes
+
 - `gpuGroup.spec.maxAttachedPods` is a `*int32` pointer: nil means unlimited, a non-nil value specifies the cap
 
 ---
 
 # Swap Aware Scheduling Using `GPUGroupTemplates`
+
 ## Motivation
+
 Allow users to deploy multiple workloads on shared GPU resources in a deterministic way by leveraging [Run:AI Swap](https://run-ai-docs.nvidia.com/self-hosted/platform-management/runai-scheduler/resource-optimization/memory-swap).
 
 ## Proposal
+
 ### API
+
 #### New `SwapGroup` CRD is introduced:
+
 A `SwapGroup` is a new resource that users can define and reference in their Pods. It gives them the ability to dynamically enable and configure the Run:AI Swap feature on their Nodes.
+
 ```yaml
 apiVersion: runai.scheduler/v1alpha1
 # Manages groups of GPUs that are shared utilizing Run:AI's Swap feature
@@ -287,9 +311,6 @@ spec:
           gpuCount: 2
           # Optional. Mutable. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
           maxAttachedPods: 3
-          # Optional. Immutable. Specifies what type of node the GPUGroup should be scheduled on
-          nodeAffinity:
-            ...
 status:
   # Kubernetes conditions to communicate state
   conditions:
@@ -298,10 +319,12 @@ status:
   gpuGroupTemplateStatus:
     ...
 ```
+
 This new API leverages the `GPUGroupTemplate` API in order to reserve and share GPU devices.
 In addition to that, it will be responsible for reserving the CPU  memory requested by the user, and managing the GPU memory of the shared GPUs.
 
 ##### Semantics
+
 - When a `SwapGroup` is created, a matching `GPUGroupTemplate` should be created automatically
 - Pods reference the created `GPUGroupTemplate`
 - Once a `GPUGroup` is created and set up, the scheduler should also, in addition to the required logic for the `GPUGroup`, create a `swap-reservation` Pod on the target Node
@@ -320,3 +343,4 @@ spec:
   schedulerName: kai-scheduler
   ...
 ```
+
