@@ -47,7 +47,7 @@ Create `pkg/apis/scheduling/v1alpha2/gpugroup_webhook.go`:
 
 - `SetupGPUGroupWebhookWithManager(mgr)` — follows the Queue/PodGroup webhook pattern
 - `ValidateCreate`: `gpuCount >= 1`, `maxAttachedPods` if set must be `>= 1`
-- `ValidateUpdate`: reject changes to `spec.gpuCount` (immutability)
+- `ValidateUpdate`: reject changes to `spec.gpuCount` (immutability); `spec.maxAttachedPods` can only be increased (reject decreases and reject setting to nil if previously set)
 - `ValidateDelete`: no-op
 
 ### 2.2 GPUGroupTemplate validation webhook

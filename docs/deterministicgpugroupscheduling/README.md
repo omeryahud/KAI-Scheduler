@@ -25,7 +25,7 @@ metadata:
 spec:
   # Required. Immutable. Number of GPUs to allocate for this GPUGroup
   gpuCount: 2
-  # Optional. Mutable. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
+  # Optional. Mutable, can only be increased. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
   maxAttachedPods: 3
 status:
   # Kubernetes conditions to communicate state
@@ -310,7 +310,7 @@ spec:
         spec:
           # Required. Immutable. Number of GPUs to allocate for this GPUGroup attached to this GPUGroup
           gpuCount: 2
-          # Optional. Mutable. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
+          # Optional. Mutable, can only be increased. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
           maxAttachedPods: 3
 status:
   # Kubernetes conditions to communicate state
