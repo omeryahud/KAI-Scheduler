@@ -215,6 +215,7 @@ spec:
   - For each `GPUGroup` that was created from this template, and until scheduling succeeded:
     - Attempt scheduling and attaching of the `GPUGroup`'s GPUs to the Pod
   - If all attempts failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
+- When the scheduler resolves a `GPUGroupTemplate` to a specific `GPUGroup`, it sets the `kai.scheduler/gpu-group` label on the Pod before creating a BindRequest. On binding failure, the scheduler may override this label to retry with a different `GPUGroup` from the same template. This label override is only permitted for Pods that also carry the `kai.scheduler/gpu-group-template` label
 
 #### Notes
 

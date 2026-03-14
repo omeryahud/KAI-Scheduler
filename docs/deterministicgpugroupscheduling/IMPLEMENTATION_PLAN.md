@@ -62,6 +62,7 @@ Create `pkg/admission/webhook/v1alpha2/gpugroup/gpu_group.go`:
 
 - Implements the existing `Plugin` interface (`Name()`, `Validate()`, `Mutate()`)
 - `Validate`: if pod has `kai.scheduler/gpu-group` label, verify the referenced GPUGroup exists in the same namespace and queue
+- `Mutate`: if pod references a GPUGroup (via `kai.scheduler/gpu-group` or `kai.scheduler/gpu-group-template` label), mutate the pod's target containers to add `envFrom` referencing the `gpu-sharing` ConfigMap — same mutation the existing admission webhook performs for fractional GPU pods. The `kai.scheduler/gpu-group-attached-container-names` annotation determines which containers are mutated (defaults to first container)
 - Register in `cmd/admission/app/app.go` alongside existing plugins
 
 **Files created:**
@@ -197,8 +198,9 @@ When a pod references a `GPUGroupTemplate` (via label `kai.scheduler/gpu-group-t
 1. Look up the template in cache
 2. Iterate existing GPUGroups created from this template
 3. For each, check if the pod can attach (maxAttachedPods, uniqueMemberID constraints)
-4. If a valid GPUGroup is found → treat the pod as if it references that GPUGroup directly
+4. If a valid GPUGroup is found → set the `kai.scheduler/gpu-group` label on the pod to point to that GPUGroup, then treat the pod as a direct GPUGroup consumer from this point on
 5. If none found → create a new GPUGroup from the template spec, leave pod Pending
+6. On binding failure, the scheduler may override the `kai.scheduler/gpu-group` label to retry with a different GPUGroup from the same template. This label override is only permitted for the GPUGroupTemplate use case (pods that also have the `kai.scheduler/gpu-group-template` label)
 
 This can be a separate `gpugrouptemplate` plugin or part of the `gpugroup` plugin.
 
