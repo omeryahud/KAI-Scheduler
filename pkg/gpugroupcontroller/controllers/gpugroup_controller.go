@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,6 +33,8 @@ const (
 	rateLimiterMaxDelay  = time.Minute
 
 	GPUGroupToPodIndexer = ".metadata.labels.kai.scheduler/gpu-group"
+
+	gpuGroupFinalizer = "kai.scheduler/gpugroup-protection"
 )
 
 type Configs struct {
@@ -47,6 +50,7 @@ type GPUGroupReconciler struct {
 
 // +kubebuilder:rbac:groups=kai.scheduler,resources=gpugroups,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=kai.scheduler,resources=gpugroups/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kai.scheduler,resources=gpugroups/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch
 
 func (r *GPUGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -61,6 +65,14 @@ func (r *GPUGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 		logger.Error(err, fmt.Sprintf("Failed to get GPUGroup for request %s/%s", req.Namespace, req.Name))
 		return ctrl.Result{}, err
+	}
+
+	if err := r.ensureFinalizer(ctx, gpuGroup); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if !gpuGroup.DeletionTimestamp.IsZero() {
+		return r.reconcileDeletion(ctx, gpuGroup)
 	}
 
 	return r.reconcileGPUGroup(ctx, gpuGroup)
@@ -91,6 +103,42 @@ func (r *GPUGroupReconciler) reconcileGPUGroup(ctx context.Context, gpuGroup *ka
 			logger.Error(err, "Failed to update GPUGroup status")
 			return ctrl.Result{}, err
 		}
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *GPUGroupReconciler) ensureFinalizer(ctx context.Context, gpuGroup *kaiv1alpha1.GPUGroup) error {
+	if controllerutil.ContainsFinalizer(gpuGroup, gpuGroupFinalizer) {
+		return nil
+	}
+	controllerutil.AddFinalizer(gpuGroup, gpuGroupFinalizer)
+	return r.Update(ctx, gpuGroup)
+}
+
+func (r *GPUGroupReconciler) reconcileDeletion(ctx context.Context, gpuGroup *kaiv1alpha1.GPUGroup) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	if !controllerutil.ContainsFinalizer(gpuGroup, gpuGroupFinalizer) {
+		return ctrl.Result{}, nil
+	}
+
+	consumerPods, err := r.listConsumerPods(ctx, gpuGroup)
+	if err != nil {
+		logger.Error(err, "Failed to list consumer pods during deletion")
+		return ctrl.Result{}, err
+	}
+
+	if len(consumerPods) > 0 {
+		logger.Info("GPUGroup still has attached pods, cannot remove finalizer",
+			"attachedPods", len(consumerPods))
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	controllerutil.RemoveFinalizer(gpuGroup, gpuGroupFinalizer)
+	if err := r.Update(ctx, gpuGroup); err != nil {
+		logger.Error(err, "Failed to remove finalizer")
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

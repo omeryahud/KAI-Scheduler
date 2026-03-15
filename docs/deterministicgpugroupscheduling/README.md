@@ -25,8 +25,6 @@ metadata:
 spec:
   # Required. Immutable. Number of GPUs to allocate for this GPUGroup
   gpuCount: 2
-  # Optional. Mutable, can only be increased. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
-  maxAttachedPods: 3
 status:
   # Kubernetes conditions to communicate state
   conditions: 
@@ -216,12 +214,8 @@ spec:
   - If no `GPUGroup` was created from this template yet, create one
   - For each `GPUGroup` that was created from this template, and until scheduling succeeded:
     - Attempt scheduling and attaching of the `GPUGroup`'s GPUs to the Pod
-  - If all attempts failed due to `GPUGroup` scheduling constraints (`GPUGroup` reached `maxAttachedPods` or already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
+  - If all attempts failed due to `GPUGroup` scheduling constraints (already has an identical `unique-member-id` attached), create a new `GPUGroup` from the `GPUGroupTemplate` and attempt scheduling to the new `GPUGroup`
 - When the scheduler resolves a `GPUGroupTemplate` to a specific `GPUGroup`, it sets the `kai.scheduler/gpu-group` label on the Pod before creating a BindRequest. On binding failure, the scheduler may override this label to retry with a different `GPUGroup` from the same template. This label override is only permitted for Pods that also carry the `kai.scheduler/gpu-group-template` label
-
-#### Notes
-
-- `gpuGroup.spec.maxAttachedPods` is a `*int32` pointer: nil means unlimited, a non-nil value specifies the cap
 
 ---
 
@@ -312,8 +306,6 @@ spec:
         spec:
           # Required. Immutable. Number of GPUs to allocate for this GPUGroup attached to this GPUGroup
           gpuCount: 2
-          # Optional. Mutable, can only be increased. If not specified (nil), unlimited. Specifies the maximum number of Pods that can be attached to this GPUGroup
-          maxAttachedPods: 3
 status:
   # Kubernetes conditions to communicate state
   conditions:

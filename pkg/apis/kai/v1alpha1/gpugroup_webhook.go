@@ -51,10 +51,6 @@ func (_ *GPUGroup) ValidateUpdate(ctx context.Context, oldObj runtime.Object, ne
 		return nil, fmt.Errorf("spec.gpuCount is immutable")
 	}
 
-	if err := validateMaxAttachedPodsUpdate(oldGPUGroup.Spec.MaxAttachedPods, newGPUGroup.Spec.MaxAttachedPods); err != nil {
-		return nil, err
-	}
-
 	return nil, nil
 }
 
@@ -65,28 +61,17 @@ func (_ *GPUGroup) ValidateDelete(ctx context.Context, obj runtime.Object) (admi
 		return nil, fmt.Errorf("expected a GPUGroup but got a %T", obj)
 	}
 	logger.Info("validate delete", "namespace", gpuGroup.Namespace, "name", gpuGroup.Name)
+
+	if len(gpuGroup.Status.AttachedPodsNames) > 0 {
+		return nil, fmt.Errorf("cannot delete GPUGroup %s/%s: %d pod(s) are still attached",
+			gpuGroup.Namespace, gpuGroup.Name, len(gpuGroup.Status.AttachedPodsNames))
+	}
 	return nil, nil
 }
 
 func validateGPUGroupSpec(spec *GPUGroupSpec) error {
 	if spec.GPUCount < 1 {
 		return fmt.Errorf("spec.gpuCount must be at least 1")
-	}
-	if spec.MaxAttachedPods != nil && *spec.MaxAttachedPods < 1 {
-		return fmt.Errorf("spec.maxAttachedPods must be at least 1 when set")
-	}
-	return nil
-}
-
-func validateMaxAttachedPodsUpdate(oldVal, newVal *int32) error {
-	if oldVal == nil {
-		return nil
-	}
-	if newVal == nil {
-		return fmt.Errorf("spec.maxAttachedPods cannot be set to nil once set")
-	}
-	if *newVal < *oldVal {
-		return fmt.Errorf("spec.maxAttachedPods can only be increased (old: %d, new: %d)", *oldVal, *newVal)
 	}
 	return nil
 }

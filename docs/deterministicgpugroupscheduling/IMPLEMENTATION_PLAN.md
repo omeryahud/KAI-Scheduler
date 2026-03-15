@@ -7,7 +7,7 @@
 Create `pkg/apis/kai/v1alpha1/gpugroup_types.go`:
 
 - `GPUGroup` and `GPUGroupList` structs with kubebuilder markers (`+genclient`, `+kubebuilder:object:root=true`, `+kubebuilder:subresource:status`)
-- `GPUGroupSpec`: `GPUCount int32`, `MaxAttachedPods *int32`
+- `GPUGroupSpec`: `GPUCount int32`
 - `GPUGroupStatus`: `Phase GPUGroupPhase`, `PhaseMessage string`, `NodeName string`, `GPUSUUIDs []string`, `AttachedPodsNames []string`, `UniqueMemberIDs []string`, `Conditions []metav1.Condition`
 - `GPUGroupPhase` type with constants: `Accepted`, `Allocated`, `Failed`
 - Place in `kai/v1alpha1` alongside `Topology` (same group `kai.scheduler`, same version)
@@ -46,8 +46,8 @@ Create `pkg/apis/kai/v1alpha1/gpugrouptemplate_types.go`:
 Create `pkg/apis/kai/v1alpha1/gpugroup_webhook.go`:
 
 - `SetupGPUGroupWebhookWithManager(mgr)` — follows the Queue/PodGroup webhook pattern
-- `ValidateCreate`: `gpuCount >= 1`, `maxAttachedPods` if set must be `>= 1`
-- `ValidateUpdate`: reject changes to `spec.gpuCount` (immutability); `spec.maxAttachedPods` can only be increased (reject decreases and reject setting to nil if previously set)
+- `ValidateCreate`: `gpuCount >= 1`
+- `ValidateUpdate`: reject changes to `spec.gpuCount` (immutability)
 - `ValidateDelete`: no-op
 
 ### 2.2 GPUGroupTemplate validation webhook
@@ -176,7 +176,7 @@ Create `pkg/scheduler/plugins/gpugroup/gpugroup.go`:
   - If not found → return error (Unschedulable)
   - If phase is `Accepted` → trigger reservation flow (see 5.3), return error (Pending)
   - If phase is `Failed` → Skip this `GPUGroup`
-  - If phase is `Allocated` → check `maxAttachedPods` and `uniqueMemberIDs` constraints, restrict to the GPUGroup's node
+  - If phase is `Allocated` → check `uniqueMemberIDs` constraints, restrict to the GPUGroup's node
 - `**PredicateFn`**: If pod references an `Allocated` GPUGroup → only allow the node matching `status.nodeName`, given that all other scheduling constraints also allow this node, otherwise mark the Pod as `Unschedulable`. This means consumer pods with scheduling constraints incompatible with the GPUGroup's node (e.g., mismatched nodeSelector, affinity, tolerations) will fail here
 - `**BindRequestMutateFn`**: Inject the GPUGroup's GPU UUIDs into `SelectedGPUGroups` on the BindRequest
 - Register in `pkg/scheduler/plugins/factory.go`
@@ -198,7 +198,7 @@ When a pod references a `GPUGroupTemplate` (via label `kai.scheduler/gpu-group-t
 
 1. Look up the template in cache
 2. Iterate existing GPUGroups created from this template
-3. For each, check if the pod can attach (maxAttachedPods, uniqueMemberID constraints)
+3. For each, check if the pod can attach (uniqueMemberID constraints)
 4. If a valid GPUGroup is found → set the `kai.scheduler/gpu-group` label on the pod to point to that GPUGroup, then treat the pod as a direct GPUGroup consumer from this point on
 5. If none found → create a new GPUGroup from the template spec, leave pod Pending
 6. On binding failure, the scheduler may override the `kai.scheduler/gpu-group` label to retry with a different GPUGroup from the same template. This label override is only permitted for the GPUGroupTemplate use case (pods that also have the `kai.scheduler/gpu-group-template` label)

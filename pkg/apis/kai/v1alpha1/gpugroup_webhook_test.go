@@ -6,8 +6,6 @@ package v1alpha1
 import (
 	"context"
 	"testing"
-
-	"k8s.io/utils/ptr"
 )
 
 func TestGPUGroupValidateCreate(t *testing.T) {
@@ -26,16 +24,6 @@ func TestGPUGroupValidateCreate(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "valid GPUGroup with maxAttachedPods",
-			gpuGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        1,
-					MaxAttachedPods: ptr.To(int32(3)),
-				},
-			},
-			expectErr: false,
-		},
-		{
 			name: "invalid gpuCount zero",
 			gpuGroup: &GPUGroup{
 				Spec: GPUGroupSpec{
@@ -49,16 +37,6 @@ func TestGPUGroupValidateCreate(t *testing.T) {
 			gpuGroup: &GPUGroup{
 				Spec: GPUGroupSpec{
 					GPUCount: -1,
-				},
-			},
-			expectErr: true,
-		},
-		{
-			name: "invalid maxAttachedPods zero",
-			gpuGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        1,
-					MaxAttachedPods: ptr.To(int32(0)),
 				},
 			},
 			expectErr: true,
@@ -103,80 +81,46 @@ func TestGPUGroupValidateUpdate(t *testing.T) {
 			},
 			expectErr: true,
 		},
+	}
+
+	validator := &GPUGroup{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := validator.ValidateUpdate(context.Background(), tt.oldGroup, tt.newGroup)
+			if (err != nil) != tt.expectErr {
+				t.Errorf("ValidateUpdate() error = %v, expectErr %v", err, tt.expectErr)
+			}
+		})
+	}
+}
+
+func TestGPUGroupValidateDelete(t *testing.T) {
+	tests := []struct {
+		name      string
+		gpuGroup  *GPUGroup
+		expectErr bool
+	}{
 		{
-			name: "maxAttachedPods increased",
-			oldGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(3)),
-				},
-			},
-			newGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(5)),
-				},
+			name: "no attached pods",
+			gpuGroup: &GPUGroup{
+				Status: GPUGroupStatus{},
 			},
 			expectErr: false,
 		},
 		{
-			name: "maxAttachedPods decreased",
-			oldGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(5)),
-				},
-			},
-			newGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(3)),
+			name: "has attached pods",
+			gpuGroup: &GPUGroup{
+				Status: GPUGroupStatus{
+					AttachedPodsNames: []string{"pod-1", "pod-2"},
 				},
 			},
 			expectErr: true,
 		},
 		{
-			name: "maxAttachedPods set to nil when previously set",
-			oldGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(3)),
-				},
-			},
-			newGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount: 2,
-				},
-			},
-			expectErr: true,
-		},
-		{
-			name: "maxAttachedPods set when previously nil",
-			oldGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount: 2,
-				},
-			},
-			newGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(3)),
-				},
-			},
-			expectErr: false,
-		},
-		{
-			name: "maxAttachedPods unchanged",
-			oldGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(3)),
-				},
-			},
-			newGroup: &GPUGroup{
-				Spec: GPUGroupSpec{
-					GPUCount:        2,
-					MaxAttachedPods: ptr.To(int32(3)),
+			name: "empty attached pods list",
+			gpuGroup: &GPUGroup{
+				Status: GPUGroupStatus{
+					AttachedPodsNames: []string{},
 				},
 			},
 			expectErr: false,
@@ -186,9 +130,9 @@ func TestGPUGroupValidateUpdate(t *testing.T) {
 	validator := &GPUGroup{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := validator.ValidateUpdate(context.Background(), tt.oldGroup, tt.newGroup)
+			_, err := validator.ValidateDelete(context.Background(), tt.gpuGroup)
 			if (err != nil) != tt.expectErr {
-				t.Errorf("ValidateUpdate() error = %v, expectErr %v", err, tt.expectErr)
+				t.Errorf("ValidateDelete() error = %v, expectErr %v", err, tt.expectErr)
 			}
 		})
 	}

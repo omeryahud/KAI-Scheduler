@@ -6,8 +6,6 @@ package v1alpha1
 import (
 	"context"
 	"testing"
-
-	"k8s.io/utils/ptr"
 )
 
 func TestGPUGroupTemplateValidateCreate(t *testing.T) {
@@ -30,40 +28,12 @@ func TestGPUGroupTemplateValidateCreate(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name: "valid template with maxAttachedPods",
-			template: &GPUGroupTemplate{
-				Spec: GPUGroupTemplateSpec{
-					Template: GPUGroupTemplateData{
-						Spec: GPUGroupSpec{
-							GPUCount:        1,
-							MaxAttachedPods: ptr.To(int32(5)),
-						},
-					},
-				},
-			},
-			expectErr: false,
-		},
-		{
 			name: "invalid gpuCount zero",
 			template: &GPUGroupTemplate{
 				Spec: GPUGroupTemplateSpec{
 					Template: GPUGroupTemplateData{
 						Spec: GPUGroupSpec{
 							GPUCount: 0,
-						},
-					},
-				},
-			},
-			expectErr: true,
-		},
-		{
-			name: "invalid maxAttachedPods zero",
-			template: &GPUGroupTemplate{
-				Spec: GPUGroupTemplateSpec{
-					Template: GPUGroupTemplateData{
-						Spec: GPUGroupSpec{
-							GPUCount:        2,
-							MaxAttachedPods: ptr.To(int32(0)),
 						},
 					},
 				},
@@ -78,6 +48,50 @@ func TestGPUGroupTemplateValidateCreate(t *testing.T) {
 			_, err := validator.ValidateCreate(context.Background(), tt.template)
 			if (err != nil) != tt.expectErr {
 				t.Errorf("ValidateCreate() error = %v, expectErr %v", err, tt.expectErr)
+			}
+		})
+	}
+}
+
+func TestGPUGroupTemplateValidateDelete(t *testing.T) {
+	tests := []struct {
+		name      string
+		template  *GPUGroupTemplate
+		expectErr bool
+	}{
+		{
+			name: "no owned GPUGroups",
+			template: &GPUGroupTemplate{
+				Status: GPUGroupTemplateStatus{},
+			},
+			expectErr: false,
+		},
+		{
+			name: "has owned GPUGroups",
+			template: &GPUGroupTemplate{
+				Status: GPUGroupTemplateStatus{
+					TemplatedGPUGroupsNames: []string{"gpu-group-1", "gpu-group-2"},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "empty owned GPUGroups list",
+			template: &GPUGroupTemplate{
+				Status: GPUGroupTemplateStatus{
+					TemplatedGPUGroupsNames: []string{},
+				},
+			},
+			expectErr: false,
+		},
+	}
+
+	validator := &GPUGroupTemplate{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := validator.ValidateDelete(context.Background(), tt.template)
+			if (err != nil) != tt.expectErr {
+				t.Errorf("ValidateDelete() error = %v, expectErr %v", err, tt.expectErr)
 			}
 		})
 	}

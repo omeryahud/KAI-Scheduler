@@ -49,5 +49,10 @@ func (_ *GPUGroupTemplate) ValidateDelete(ctx context.Context, obj runtime.Objec
 		return nil, fmt.Errorf("expected a GPUGroupTemplate but got a %T", obj)
 	}
 	logger.Info("validate delete", "namespace", template.Namespace, "name", template.Name)
+
+	if len(template.Status.TemplatedGPUGroupsNames) > 0 {
+		return nil, fmt.Errorf("cannot delete GPUGroupTemplate %s/%s: %d GPUGroup(s) created from this template still exist",
+			template.Namespace, template.Name, len(template.Status.TemplatedGPUGroupsNames))
+	}
 	return nil, nil
 }

@@ -15,6 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -27,6 +28,8 @@ const (
 	rateLimiterMaxDelay  = time.Minute
 
 	GPUGroupTemplateOwnerIndexer = ".metadata.ownerReferences.gpugrouptemplate"
+
+	gpuGroupTemplateFinalizer = "kai.scheduler/gpugrouptemplate-protection"
 )
 
 type Configs struct {
@@ -42,6 +45,7 @@ type GPUGroupTemplateReconciler struct {
 
 // +kubebuilder:rbac:groups=kai.scheduler,resources=gpugrouptemplates,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=kai.scheduler,resources=gpugrouptemplates/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=kai.scheduler,resources=gpugrouptemplates/finalizers,verbs=update
 // +kubebuilder:rbac:groups=kai.scheduler,resources=gpugroups,verbs=get;list;watch
 
 func (r *GPUGroupTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -58,7 +62,51 @@ func (r *GPUGroupTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	if err := r.ensureFinalizer(ctx, template); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if !template.DeletionTimestamp.IsZero() {
+		return r.reconcileDeletion(ctx, template)
+	}
+
 	return r.reconcileGPUGroupTemplate(ctx, template)
+}
+
+func (r *GPUGroupTemplateReconciler) ensureFinalizer(ctx context.Context, template *kaiv1alpha1.GPUGroupTemplate) error {
+	if controllerutil.ContainsFinalizer(template, gpuGroupTemplateFinalizer) {
+		return nil
+	}
+	controllerutil.AddFinalizer(template, gpuGroupTemplateFinalizer)
+	return r.Update(ctx, template)
+}
+
+func (r *GPUGroupTemplateReconciler) reconcileDeletion(ctx context.Context, template *kaiv1alpha1.GPUGroupTemplate) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	if !controllerutil.ContainsFinalizer(template, gpuGroupTemplateFinalizer) {
+		return ctrl.Result{}, nil
+	}
+
+	ownedGPUGroups, err := r.listOwnedGPUGroups(ctx, template)
+	if err != nil {
+		logger.Error(err, "Failed to list owned GPUGroups during deletion")
+		return ctrl.Result{}, err
+	}
+
+	if len(ownedGPUGroups) > 0 {
+		logger.Info("GPUGroupTemplate still has owned GPUGroups, cannot remove finalizer",
+			"ownedGPUGroups", len(ownedGPUGroups))
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	controllerutil.RemoveFinalizer(template, gpuGroupTemplateFinalizer)
+	if err := r.Update(ctx, template); err != nil {
+		logger.Error(err, "Failed to remove finalizer")
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
 }
 
 func (r *GPUGroupTemplateReconciler) reconcileGPUGroupTemplate(

@@ -23,12 +23,6 @@ type GPUGroupSpec struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="gpuCount is immutable"
 	GPUCount int32 `json:"gpuCount"`
-
-	// Maximum number of Pods that can be attached to this GPUGroup.
-	// Nil means unlimited. Can only be increased after creation.
-	// +optional
-	// +kubebuilder:validation:Minimum=1
-	MaxAttachedPods *int32 `json:"maxAttachedPods,omitempty"`
 }
 
 // GPUGroupStatus defines the observed state of GPUGroup

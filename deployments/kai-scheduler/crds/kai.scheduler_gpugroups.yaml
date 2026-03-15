@@ -63,13 +63,6 @@ spec:
                 x-kubernetes-validations:
                 - message: gpuCount is immutable
                   rule: self == oldSelf
-              maxAttachedPods:
-                description: |-
-                  Maximum number of Pods that can be attached to this GPUGroup.
-                  Nil means unlimited. Can only be increased after creation.
-                format: int32
-                minimum: 1
-                type: integer
             required:
             - gpuCount
             type: object
