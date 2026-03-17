@@ -23,6 +23,7 @@ import (
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/framework"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/plugins/dynamicresources"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/plugins/elastic"
+	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/plugins/gpudeviceaffinity"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/plugins/gpupack"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/plugins/gpusharingorder"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/plugins/gpuspread"
@@ -52,6 +53,7 @@ func InitDefaultPlugins() {
 	framework.RegisterPluginBuilder("nominatednode", nominatednode.New)
 	framework.RegisterPluginBuilder("nodeavailability", nodeavailability.New)
 	framework.RegisterPluginBuilder("gpusharingorder", gpusharingorder.New)
+	framework.RegisterPluginBuilder("gpudeviceaffinity", gpudeviceaffinity.New)
 	framework.RegisterPluginBuilder("gpupack", gpupack.New)
 	framework.RegisterPluginBuilder("gpuspread", gpuspread.New)
 	framework.RegisterPluginBuilder("resourcetype", resourcetype.New)

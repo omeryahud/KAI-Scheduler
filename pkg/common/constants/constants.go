@@ -54,6 +54,13 @@ const (
 	MigStrategyLabel         = "nvidia.com/mig.strategy"
 	GpuCountLabel            = "nvidia.com/gpu.count"
 	SubGroupLabelKey         = "kai.scheduler/subgroup-name"
+
+	GPUSharingIdentifier                  = "kai.scheduler/gpu-sharing-identifier"
+	GPUSharingGroupRequiredAffinity       = "kai.scheduler/gpu-sharing-group-required-affinity"
+	GPUSharingGroupPreferredAffinity      = "kai.scheduler/gpu-sharing-group-preferred-affinity"
+	GPUSharingGroupRequiredAntiAffinity   = "kai.scheduler/gpu-sharing-group-required-anti-affinity"
+	GPUSharingGroupPreferredAntiAffinity  = "kai.scheduler/gpu-sharing-group-preferred-anti-affinity"
+	GPUSharingGroupAllowFreeGPUAllocation = "kai.scheduler/gpu-sharing-group-allow-free-gpu-allocation"
 )
 
 // QueueValidatedVersions returns the list of queue versions that we validate with a webhook. This will be used by the

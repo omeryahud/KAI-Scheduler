@@ -45,6 +45,7 @@ tiers:
   - name: ray
   - name: nodeavailability
   - name: gpusharingorder
+  - name: gpudeviceaffinity
   - name: gpupack
   - name: resourcetype
   - name: subgrouporder
