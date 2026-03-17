@@ -210,4 +210,33 @@ var _ = Describe("GPU device affinity scoring", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(score).To(Equal(0.0))
 	})
+
+	It("Unaware pod excluded from GPU with identifiers", func() {
+		existing := createExistingPod("existing", "A", []string{"0"})
+		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{
+			"existing": existing,
+		})
+		task := createTask(nil)
+		_, err := gpuOrderFn(task, nodeInfo, "0")
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("Unaware pod allowed on GPU without identifiers", func() {
+		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{})
+		task := createTask(nil)
+		score, err := gpuOrderFn(task, nodeInfo, "0")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(score).To(Equal(0.0))
+	})
+
+	It("Unaware pod allowed on WholeGpuIndicator", func() {
+		existing := createExistingPod("existing", "A", []string{"0"})
+		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{
+			"existing": existing,
+		})
+		task := createTask(nil)
+		score, err := gpuOrderFn(task, nodeInfo, pod_info.WholeGpuIndicator)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(score).To(Equal(0.0))
+	})
 })

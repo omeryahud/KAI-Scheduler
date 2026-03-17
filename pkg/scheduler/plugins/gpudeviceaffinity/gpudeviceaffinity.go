@@ -34,18 +34,16 @@ func (p *gpuDeviceAffinityPlugin) OnSessionClose(_ *framework.Session) {}
 
 func gpuOrderFn(task *pod_info.PodInfo, node *node_info.NodeInfo, gpuIdx string) (float64, error) {
 	labels := task.Pod.Labels
-	if labels == nil {
-		return 0, nil
-	}
 
+	_, hasIdentifier := labels[commonconstants.GPUSharingIdentifier]
 	reqAff := parseCSV(labels[commonconstants.GPUSharingGroupRequiredAffinity])
 	prefAff := parseCSV(labels[commonconstants.GPUSharingGroupPreferredAffinity])
 	reqAntiAff := parseCSV(labels[commonconstants.GPUSharingGroupRequiredAntiAffinity])
 	prefAntiAff := parseCSV(labels[commonconstants.GPUSharingGroupPreferredAntiAffinity])
 
-	hasConstraints := len(reqAff) > 0 || len(prefAff) > 0 || len(reqAntiAff) > 0 || len(prefAntiAff) > 0
+	hasConstraints := hasIdentifier || len(reqAff) > 0 || len(prefAff) > 0 || len(reqAntiAff) > 0 || len(prefAntiAff) > 0
 	if !hasConstraints {
-		return 0, nil
+		return excludeTaggedGPU(task, node, gpuIdx)
 	}
 
 	allowFreeStr, exists := labels[commonconstants.GPUSharingGroupAllowFreeGPUAllocation]
@@ -93,6 +91,19 @@ func gpuOrderFn(task *pod_info.PodInfo, node *node_info.NodeInfo, gpuIdx string)
 		"GPU device affinity: Task <%s/%s> gpuIdx <%s> node <%s> score %f",
 		task.Namespace, task.Name, gpuIdx, node.Name, score)
 	return score, nil
+}
+
+func excludeTaggedGPU(task *pod_info.PodInfo, node *node_info.NodeInfo, gpuIdx string) (float64, error) {
+	if gpuIdx == pod_info.WholeGpuIndicator {
+		return 0, nil
+	}
+	gpuIdentifiers := gpuGroupIdentifiers(node)
+	if len(gpuIdentifiers[gpuIdx]) > 0 {
+		return 0, fmt.Errorf(
+			"GPU %s has device affinity identifiers, excluding for unaware pod <%s/%s>",
+			gpuIdx, task.Namespace, task.Name)
+	}
+	return 0, nil
 }
 
 func gpuGroupIdentifiers(node *node_info.NodeInfo) map[string]map[string]bool {
