@@ -146,17 +146,7 @@ var _ = Describe("GPU device affinity scoring", func() {
 		Expect(score).To(Equal(-1.0))
 	})
 
-	It("WholeGpuIndicator with preferred affinity and allow free false", func() {
-		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{})
-		task := createTask(map[string]string{
-			commonconstants.GPUSharingGroupPreferredAffinity:      "B",
-			commonconstants.GPUSharingGroupAllowFreeGPUAllocation: "false",
-		})
-		_, err := gpuOrderFn(task, nodeInfo, pod_info.WholeGpuIndicator)
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("WholeGpuIndicator with allow free true", func() {
+	It("WholeGpuIndicator allowed for affinity-aware pod", func() {
 		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{})
 		task := createTask(map[string]string{
 			commonconstants.GPUSharingGroupRequiredAffinity: "B",
@@ -164,16 +154,6 @@ var _ = Describe("GPU device affinity scoring", func() {
 		score, err := gpuOrderFn(task, nodeInfo, pod_info.WholeGpuIndicator)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(score).To(Equal(0.0))
-	})
-
-	It("WholeGpuIndicator with allow free false", func() {
-		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{})
-		task := createTask(map[string]string{
-			commonconstants.GPUSharingGroupRequiredAffinity:       "B",
-			commonconstants.GPUSharingGroupAllowFreeGPUAllocation: "false",
-		})
-		_, err := gpuOrderFn(task, nodeInfo, pod_info.WholeGpuIndicator)
-		Expect(err).To(HaveOccurred())
 	})
 
 	It("Multiple identifiers on GPU", func() {
@@ -197,16 +177,6 @@ var _ = Describe("GPU device affinity scoring", func() {
 			commonconstants.GPUSharingGroupRequiredAffinity: "",
 		})
 		score, err := gpuOrderFn(task, nodeInfo, "0")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(score).To(Equal(0.0))
-	})
-
-	It("allow-free-gpu-allocation absent defaults to allowed", func() {
-		nodeInfo := createNodeWithPods(map[common_info.PodID]*pod_info.PodInfo{})
-		task := createTask(map[string]string{
-			commonconstants.GPUSharingGroupRequiredAffinity: "B",
-		})
-		score, err := gpuOrderFn(task, nodeInfo, pod_info.WholeGpuIndicator)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(score).To(Equal(0.0))
 	})

@@ -46,13 +46,7 @@ func gpuOrderFn(task *pod_info.PodInfo, node *node_info.NodeInfo, gpuIdx string)
 		return excludeTaggedGPU(task, node, gpuIdx)
 	}
 
-	allowFreeStr, exists := labels[commonconstants.GPUSharingGroupAllowFreeGPUAllocation]
-	allowFree := !exists || allowFreeStr != "false"
-
 	if gpuIdx == pod_info.WholeGpuIndicator {
-		if !allowFree {
-			return 0, fmt.Errorf("pod <%s/%s> disallows free GPU allocation", task.Namespace, task.Name)
-		}
 		return 0, nil
 	}
 
