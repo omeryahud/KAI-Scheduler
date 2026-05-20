@@ -135,7 +135,7 @@ func TestDeploymentForShard(t *testing.T) {
 			deploy, ok := deployment.(*appsv1.Deployment)
 			require.True(t, ok, "Expected *appsv1.Deployment")
 
-			assert.Equal(t, deploymentName(tt.config, tt.shard), deploy.Name)
+			assert.Equal(t, DeploymentName(tt.config, tt.shard), deploy.Name)
 			assert.Equal(t, tt.config.Spec.Namespace, deploy.Namespace)
 
 			container := deploy.Spec.Template.Spec.Containers[0]
